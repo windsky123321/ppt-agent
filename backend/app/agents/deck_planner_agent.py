@@ -14,21 +14,35 @@ class DeckPlannerAgent:
     def __init__(self, llm: BaseLLMProvider) -> None:
         self.llm = llm
 
-    def run(self, paper: ParsedPaper, summary: PaperSummary, settings: GenerationSettings, profile: UserProfile | None = None, assets: ExtractedAssets | None = None) -> DeckPlan:
+    def run(
+        self,
+        paper: ParsedPaper,
+        summary: PaperSummary,
+        settings: GenerationSettings,
+        profile: UserProfile | None = None,
+        assets: ExtractedAssets | None = None,
+    ) -> DeckPlan:
         if self.llm.__class__.__name__ == "MockLLMProvider":
             return self._run_heuristic(paper, summary, settings, profile, assets)
         payload = {"paper_summary": summary.model_dump(), **settings.model_dump()}
-        prompt = json.dumps(payload, ensure_ascii=False)
-        prompt = f"{DECK_PLAN_PROMPT}\nSchema: deck_plan\n{prompt}"
-        data = self.llm.generate_json(json.dumps(payload, ensure_ascii=False), "deck_plan")
+        prompt = f"{DECK_PLAN_PROMPT}\nSchema: deck_plan\n{json.dumps(payload, ensure_ascii=False)}"
+        data = self.llm.generate_json(prompt, "deck_plan")
         return DeckPlan(**data)
 
-    def _run_heuristic(self, paper: ParsedPaper, summary: PaperSummary, settings: GenerationSettings, profile: UserProfile | None, assets: ExtractedAssets | None) -> DeckPlan:
+    def _run_heuristic(
+        self,
+        paper: ParsedPaper,
+        summary: PaperSummary,
+        settings: GenerationSettings,
+        profile: UserProfile | None,
+        assets: ExtractedAssets | None,
+    ) -> DeckPlan:
         section_map = build_section_map(paper)
         instruction_text = (settings.long_instruction or "") + " " + ((profile.custom_instructions if profile else "") or "")
         lowered_instruction = instruction_text.lower()
-        wants_backup = "backup" in lowered_instruction or "答辩" in instruction_text or (settings.slide_count >= 18)
+        wants_backup = "backup" in lowered_instruction or "答辩" in instruction_text or settings.slide_count >= 18
         quick_mode = settings.slide_count <= 8
+
         blueprint = [
             ("title", "Title", "Introduce the paper, authors, and context.", ""),
             ("takeaway", "One-Slide Takeaway", "State the main idea and outcome in one slide.", "abstract"),
@@ -62,18 +76,21 @@ class DeckPlannerAgent:
             ]
 
         slides = []
-        asset_lookup = {}
+        asset_lookup: dict[str, list[str]] = {}
         for asset in (assets.assets if assets else []):
             asset_lookup.setdefault(asset.suggested_slide_usage, []).append(asset.id)
+
         for slide_type, title, purpose, key_section in blueprint:
+            if slide_type == "discussion" and not settings.include_discussion_questions:
+                continue
+            if slide_type == "limitations" and not settings.include_limitations:
+                continue
             if slide_type not in {"title", "takeaway", "contributions", "strengths", "discussion", "conclusion"}:
                 if not section_map.get(key_section) and key_section not in {"background", "problem", "technical", "discussion", "limitations"}:
                     continue
                 if slide_type == "analysis" and not (section_map.get("discussion") or section_map.get("results")):
                     continue
                 if slide_type == "limitations" and not summary.limitations:
-                    continue
-                if slide_type == "discussion" and not settings.include_discussion_questions:
                     continue
             slides.append(
                 {
@@ -82,7 +99,8 @@ class DeckPlannerAgent:
                     "title": title,
                     "purpose": purpose,
                     "key_section": key_section,
-                    "asset_ids": asset_lookup.get(slide_type, [])[:1] or asset_lookup.get("method" if slide_type in {"method", "technical"} else "result", [])[:1],
+                    "asset_ids": asset_lookup.get(slide_type, [])[:1]
+                    or asset_lookup.get("method" if slide_type in {"method", "technical"} else "result", [])[:1],
                 }
             )
             if len(slides) >= settings.slide_count:

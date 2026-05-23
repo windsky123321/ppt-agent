@@ -1,118 +1,80 @@
-# Windows 一键启动说明
+# Windows 快速开始
 
-## 1. 运行环境
+## 启动应用
 
-请先确保你的 Windows 电脑安装了：
+- 双击 `start_windows.bat`
+- 浏览器会自动打开 `http://127.0.0.1:8000`
+- 停止服务时双击 `stop_windows.bat`
 
-- Python 3.11 或更高版本
-- Node.js 18 或更高版本
+启动前请先安装：
 
-## 2. 一键启动
+- Python 3.11+
+- Node.js 18+
 
-直接双击项目根目录中的：
+## 生成 EXE
 
-- `start_windows.bat`
+双击 `build_release_windows.bat` 即可一键构建 Windows 发布包。
 
-它会自动：
+默认输出：
 
-1. 检查 Python / Node.js / npm
-2. 创建后端虚拟环境（如果缺失）
-3. 安装后端依赖
-4. 安装前端依赖
-5. 自动创建 `.env`
-6. 启动后端
-7. 启动前端
-8. 自动打开浏览器
+- `release/PPT-Agent.exe`
+- `release/README.md`
+- `release/WINDOWS_QUICKSTART.md`
+- `release/RELEASE_NOTES.md`
+- `release/.env.example`
 
-默认地址：
+同时会生成 portable 兜底包：
 
-- 前端：http://127.0.0.1:5173
-- 后端：http://127.0.0.1:8000
+- `release/PPT-Agent-Portable/`
 
-## 3. Web UI 使用流程
+## 通过 GitHub Actions 生成 EXE
 
-1. 打开网页
-2. 进入“模型配置”
-3. 如果没有 API Key，点击“使用 Mock 模式”
-4. 上传论文 PDF
-5. 选择或创建 Profile
-6. 选择 Deck Mode
-7. 在长需求输入框中粘贴自然语言要求
-8. 点击生成 PPT
-9. 下载 `final_deck.pptx`
+1. 打开 GitHub 仓库的 `Actions`
+2. 选择 `Build Windows EXE`
+3. 点击 `Run workflow`
+4. 等待构建完成
+5. 下载 artifact `PPT-Agent-Windows-Release`
 
-## 4. 如何配置模型
+下载后可在 artifact 中找到：
 
-推荐流程：
+- `release/PPT-Agent.exe`
+- `release/README.md`
+- `release/WINDOWS_QUICKSTART.md`
+- `release/RELEASE_NOTES.md`
+- `release/.env.example`
 
-- 如果只是本地体验：使用 Mock 模式
-- 如果使用 OpenAI-Compatible 服务：
-  - 填入 Base URL
-  - 填入 API Key
-  - 填入模型名称
-  - 点击“测试连接”
-  - 再保存配置
+## PyInstaller 安装失败怎么办
 
-## 5. 如何停止服务
+如果脚本提示：
 
-双击：
+- “未检测到 PyInstaller，正在尝试自动安装……”
+- “自动安装失败，可能是网络受限。请先执行 `python -m pip install pyinstaller` 后重新运行本脚本。”
 
-- `stop_windows.bat`
+请按以下方式处理：
 
-## 6. 常见问题排查
+1. 在线安装：`python -m pip install pyinstaller`
+2. 离线安装：把 PyInstaller wheel 放到 `packaging/wheelhouse/` 后重新运行 `build_release_windows.bat`
 
-### Python not found
+## 网络受限时怎么办
 
-提示未找到 Python：
+推荐做法：
 
-- 请安装 Python 3.11+
-- 安装时勾选“Add Python to PATH”
+1. 在可联网机器下载 PyInstaller 对应 wheel
+2. 复制到 `packaging/wheelhouse/`
+3. 回到目标 Windows 机器重新执行 `build_release_windows.bat`
 
-### Node not found
+构建脚本会优先从本地 wheelhouse 离线安装 PyInstaller。
 
-提示未找到 Node.js：
+## Portable 包说明
 
-- 请安装 Node.js 18+
+- `PPT-Agent.exe` 是最终用户优先使用的桌面入口
+- `PPT-Agent-Portable/` 是 EXE 构建失败时的兜底运行包
+- portable 包不会伪装成 EXE 成功，只用于先跑通本地服务
 
-### 端口被占用
+## API Key 配置
 
-如果提示 8000 或 5173 被占用：
-
-- 关闭占用该端口的程序
-- 再重新双击 `start_windows.bat`
-
-### API Key 无效
-
-- 检查 Base URL 是否正确
-- 检查 API Key 是否填写错误
-- 检查模型名称是否可用
-- 可以先切换到 Mock 模式验证整套流程
-
-### 后端启动失败
-
-查看：
-
-- `logs/backend.log`
-- `logs/startup.log`
-
-### 前端空白页
-
-查看：
-
-- `logs/frontend.log`
-
-### PDF 解析失败
-
-- 可能是扫描版 PDF 或加密 PDF
-- 可先用文本型 PDF 测试
-
-### PPTX 生成失败
-
-- 查看 `logs/backend.log`
-- 检查是否有异常 artifact
-
-## 7. 日志位置
-
-- `logs/backend.log`
-- `logs/frontend.log`
-- `logs/startup.log`
+- API Key 不会被写入 EXE
+- API Key 不会被写入示例配置
+- 请在 `.env` 或 Web UI 运行时配置中填写自己的 Key
+- `.env.example` 仅保留空占位
+- GitHub Actions 构建产物同样不会内置真实 API Key

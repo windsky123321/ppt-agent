@@ -7,13 +7,11 @@ from app.agents.critic_agent import CriticAgent
 from app.agents.deck_planner_agent import DeckPlannerAgent
 from app.agents.grounding_checker import GroundingChecker
 from app.agents.paper_summary_agent import PaperSummaryAgent
-from app.agents.regenerate_slide_agent import RegenerateSlideAgent
 from app.agents.repair_agent import RepairAgent
 from app.agents.slide_writer_agent import SlideWriterAgent
 from app.llm.providers import MockLLMProvider
 from app.main import app
 from app.schemas.assets import ExtractedAsset, ExtractedAssets
-from app.schemas.common import GenerationSettings
 from app.schemas.deck import CriticReport, SlideDrafts
 from app.schemas.paper import ParsedPaper
 from app.schemas.profile import CreateProfileRequest, UserProfile

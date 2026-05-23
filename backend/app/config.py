@@ -7,7 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
-    openai_model: str = "gpt-4.1-mini"
+    openai_model: str = "gpt-5.5"
+    fallback_openai_model: str = "gpt-4.1-mini"
     default_llm_provider: str = "mock"
     default_vision_provider: str = "mock"
     storage_dir: str = "./storage"
@@ -18,6 +19,12 @@ class Settings(BaseSettings):
     enable_critic: bool = True
     enable_repair: bool = True
     max_repair_loops: int = 2
+    reasoning_effort: str = "low"
+    verbosity: str = "low"
+    temperature: float = 0.2
+    patch_mode: bool = True
+    revision_max_output_tokens: int = 1200
+    normal_max_output_tokens: int = 4000
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

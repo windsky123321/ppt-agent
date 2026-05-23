@@ -1,0 +1,1 @@
+Please turn this paper into an English conference talk deck for expert researchers. Keep it around 12 slides. Focus on the problem, architecture, technical novelty, strongest results, and limitations. Use paper figures where helpful. Add concise speaker notes and avoid literal paragraph copying.

@@ -81,9 +81,10 @@ async def upload_paper(
             settings.long_instruction = long_instruction
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail="未找到指定的配置档。") from exc
+
     if long_instruction:
         try:
-            parsed_instruction = instruction_parser.run(LongInstructionInput(raw_text=long_instruction))
+            parsed_instruction = instruction_parser.run(LongInstructionInput(raw_text=long_instruction, language_hint=language))
         except Exception as exc:
             raise HTTPException(status_code=400, detail=f"长需求解析失败: {exc}") from exc
 
@@ -214,6 +215,7 @@ def get_model_config() -> RuntimeModelConfigView:
         llm_base_url=config.llm_base_url,
         llm_api_key_masked=_mask_key(config.llm_api_key),
         llm_model=config.llm_model,
+        fallback_llm_model=config.fallback_llm_model,
         vision_provider=config.vision_provider,
         vision_base_url=config.vision_base_url,
         vision_api_key_masked=_mask_key(config.vision_api_key),
@@ -222,6 +224,13 @@ def get_model_config() -> RuntimeModelConfigView:
         enable_critic=config.enable_critic,
         enable_repair=config.enable_repair,
         max_repair_loops=config.max_repair_loops,
+        reasoning_effort=config.reasoning_effort,
+        verbosity=config.verbosity,
+        temperature=config.temperature,
+        patch_mode=config.patch_mode,
+        revision_max_output_tokens=config.revision_max_output_tokens,
+        normal_max_output_tokens=config.normal_max_output_tokens,
+        output_dir=config.output_dir,
     )
 
 
@@ -242,11 +251,16 @@ def test_model_config(payload: RuntimeModelConfig) -> ModelTestResponse:
         )
     if not payload.llm_api_key:
         return ModelTestResponse(success=False, message="LLM API Key 未配置。", llm_ok=False, vision_ok=False)
+    fallback_note = ""
+    if payload.llm_model == "gpt-5.5":
+        fallback_note = f" 若当前运行时不支持 gpt-5.5，将回退到 {payload.fallback_llm_model}。"
     return ModelTestResponse(
         success=bool(payload.llm_base_url and payload.llm_model),
-        message="模型配置已保存，基础字段看起来有效。"
-        if payload.llm_base_url and payload.llm_model
-        else "模型配置缺少 base URL 或 model。",
+        message=(
+            f"模型配置已保存，基础字段看起来有效。{fallback_note}"
+            if payload.llm_base_url and payload.llm_model
+            else "模型配置缺少 base URL 或 model。"
+        ),
         llm_ok=bool(payload.llm_base_url and payload.llm_model),
         vision_ok=(not payload.enable_vision)
         or payload.vision_provider == "mock"

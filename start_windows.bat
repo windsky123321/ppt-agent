@@ -1,99 +1,116 @@
-@echo off
+﻿@echo off
 setlocal enabledelayedexpansion
 chcp 65001 >nul
 
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
+set "FRONTEND_DIR=%ROOT%frontend"
+for /f "usebackq delims=" %%I in (`powershell -NoProfile -Command "(Resolve-Path -LiteralPath 'frontend').ProviderPath"`) do set "FRONTEND_DIR=%%I"
 
 if not exist logs mkdir logs
-echo [startup] starting Personalized Paper-to-PPT Agent > logs\startup.log
-echo [startup] checking Python...>> logs\startup.log
+if not exist storage mkdir storage
+if not exist storage\uploads mkdir storage\uploads
+if not exist storage\decks mkdir storage\decks
+if not exist storage\config mkdir storage\config
+
+echo [启动] PPT Agent > logs\startup.log
+echo [启动] 工作目录：%ROOT%>> logs\startup.log
+
 where python >nul 2>nul
 if errorlevel 1 (
-  echo [error] Python 3.11+ is required.
+  echo [错误] 未找到 Python，请先安装 Python 3.11+。
+  echo [错误] 未找到 Python。>> logs\startup.log
   pause
   exit /b 1
 )
 
-echo [startup] checking Node.js...>> logs\startup.log
 where node >nul 2>nul
 if errorlevel 1 (
-  echo [error] Node.js 18+ is required.
+  echo [错误] 未找到 Node.js，请先安装 Node.js 18+。
+  echo [错误] 未找到 Node.js。>> logs\startup.log
   pause
   exit /b 1
 )
 
 where npm.cmd >nul 2>nul
 if errorlevel 1 (
-  echo [error] npm was not found. Please check Node.js installation.
+  echo [错误] 未找到 npm，请检查 Node.js 安装。
+  echo [错误] 未找到 npm。>> logs\startup.log
   pause
   exit /b 1
 )
 
 if not exist .env (
   copy .env.example .env >nul
-  echo [startup] created .env from .env.example>> logs\startup.log
+  echo [启动] 已根据 .env.example 创建 .env。>> logs\startup.log
 )
 
 if not exist backend\.venv (
-  echo [startup] creating backend virtual environment...
+  echo [安装] 正在创建后端虚拟环境...
   python -m venv backend\.venv >> logs\startup.log 2>&1
-)
-
-echo [startup] installing backend dependencies...
-call backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt >> logs\backend.log 2>&1
-if errorlevel 1 (
-  echo [error] backend dependency installation failed. Check logs\backend.log
-  pause
-  exit /b 1
-)
-
-echo [startup] installing frontend dependencies...
-call npm.cmd install --prefix frontend >> logs\frontend.log 2>&1
-if errorlevel 1 (
-  echo [error] frontend dependency installation failed. Check logs\frontend.log
-  pause
-  exit /b 1
-)
-
-for %%P in (8000 5173) do (
-  netstat -ano | findstr :%%P | findstr LISTENING >nul
-  if not errorlevel 1 (
-    echo [error] port %%P is already in use.
-    echo [error] port %%P is already in use.>> logs\startup.log
+  if errorlevel 1 (
+    echo [错误] 创建后端虚拟环境失败，请检查 Python 安装。
     pause
     exit /b 1
   )
 )
 
-echo [startup] starting backend...
-start "PPT Agent Backend" cmd /k "cd /d %ROOT%backend && .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 1>>..\logs\backend.log 2>>&1"
-for /l %%I in (1,1,30) do (
+echo [安装] 正在安装后端依赖...
+call backend\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt >> logs\backend.log 2>&1
+if errorlevel 1 (
+  echo [错误] 后端依赖安装失败，请查看 logs\backend.log。
+  pause
+  exit /b 1
+)
+
+echo [安装] 正在安装前端依赖...
+pushd "%FRONTEND_DIR%"
+call npm.cmd install >> ..\logs\frontend.log 2>&1
+if errorlevel 1 (
+  popd
+  echo [错误] 前端依赖安装失败，请查看 logs\frontend.log。
+  pause
+  exit /b 1
+)
+
+if not exist dist\index.html (
+  echo [构建] 正在构建前端静态资源...
+  call npm.cmd run build >> ..\logs\frontend.log 2>&1
+  if errorlevel 1 (
+    popd
+    echo [错误] 前端构建失败，请查看 logs\frontend.log。
+    pause
+    exit /b 1
+  )
+)
+popd
+
+for %%P in (8000) do (
+  netstat -ano | findstr :%%P | findstr LISTENING >nul
+  if not errorlevel 1 (
+    echo [错误] 端口 %%P 已被占用，请先释放后再启动。
+    echo [错误] 端口 %%P 已被占用。>> logs\startup.log
+    pause
+    exit /b 1
+  )
+)
+
+echo [启动] 正在启动后端服务...
+powershell -NoProfile -Command "$p = Start-Process -FilePath '%ROOT%backend\.venv\Scripts\python.exe' -ArgumentList '-m','uvicorn','app.main:app','--host','127.0.0.1','--port','8000' -WorkingDirectory '%ROOT%backend' -RedirectStandardOutput '%ROOT%logs\backend.log' -RedirectStandardError '%ROOT%logs\backend.log' -PassThru; Set-Content -Path '%ROOT%logs\backend.pid' -Value $p.Id"
+
+for /l %%I in (1,1,40) do (
   powershell -NoProfile -Command "try { $r=Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/api/health -TimeoutSec 2; if($r.StatusCode -eq 200){exit 0}else{exit 1}} catch { exit 1 }" >nul 2>nul
   if not errorlevel 1 goto backend_ready
   timeout /t 1 >nul
 )
-echo [error] backend did not start in time. Check logs\backend.log
+echo [错误] 后端未能在预期时间内启动，请查看 logs\backend.log。
 pause
 exit /b 1
 
 :backend_ready
-echo [startup] backend is ready.>> logs\startup.log
-
-echo [startup] starting frontend...
-start "PPT Agent Frontend" cmd /k "cd /d %ROOT%frontend && npm.cmd run dev -- --host 127.0.0.1 --port 5173 1>>..\logs\frontend.log 2>>&1"
-for /l %%I in (1,1,30) do (
-  powershell -NoProfile -Command "try { $r=Invoke-WebRequest -UseBasicParsing http://127.0.0.1:5173 -TimeoutSec 2; if($r.StatusCode -ge 200){exit 0}else{exit 1}} catch { exit 1 }" >nul 2>nul
-  if not errorlevel 1 goto frontend_ready
-  timeout /t 1 >nul
-)
-echo [error] frontend did not start in time. Check logs\frontend.log
-pause
-exit /b 1
-
-:frontend_ready
-echo [startup] frontend is ready.>> logs\startup.log
-start http://127.0.0.1:5173
-echo [done] Browser opened: http://127.0.0.1:5173
-echo [done] To stop, run stop_windows.bat
+echo [启动] 后端服务已就绪。>> logs\startup.log
+echo [启动] 前端静态页面由后端托管。>> logs\startup.log
+start http://127.0.0.1:8000
+echo [完成] 浏览器已打开：http://127.0.0.1:8000
+echo [完成] 如需停止服务，请双击 stop_windows.bat
 pause

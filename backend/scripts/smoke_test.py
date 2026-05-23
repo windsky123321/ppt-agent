@@ -20,7 +20,13 @@ def main() -> None:
         original_filename=fixture.name,
         settings=GenerationSettings(),
     )
-    pptx_path = Path("storage") / result.job_id / "final_deck.pptx"
+    candidate_paths = [
+        ROOT / "storage" / "decks" / result.deck_id / "final_deck.pptx",
+        ROOT / "storage" / result.job_id / "final_deck.pptx",
+        Path("storage") / "decks" / result.deck_id / "final_deck.pptx",
+        Path("storage") / result.job_id / "final_deck.pptx",
+    ]
+    pptx_path = next((path for path in candidate_paths if path.exists()), candidate_paths[0])
     if not pptx_path.exists():
         raise RuntimeError("Smoke test failed: final_deck.pptx was not created.")
     print(f"SMOKE_OK {pptx_path}")

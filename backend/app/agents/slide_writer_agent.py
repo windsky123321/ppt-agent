@@ -30,7 +30,7 @@ class SlideWriterAgent:
             "deck_plan": plan.model_dump(),
         }
         prompt = f"{SLIDE_WRITER_PROMPT}\nSchema: slide_drafts\n{json.dumps(payload, ensure_ascii=False)}"
-        data = self.llm.generate_json(json.dumps(payload, ensure_ascii=False), "slide_drafts")
+        data = self.llm.generate_json(prompt, "slide_drafts")
         return SlideDrafts(**data)
 
     def _run_heuristic(
@@ -77,8 +77,19 @@ class SlideWriterAgent:
         profile_instruction = " ".join(
             [profile.custom_instructions if profile else "", profile.long_generation_instruction if profile else ""]
         ).strip()
-        concise_requested = bool(profile and profile.tone == "concise") or "reduce text" in profile_instruction.lower() or "简洁" in profile_instruction
-        visual_requested = bool(profile and profile.tone == "visual") or "visual" in profile_instruction.lower() or "图" in profile_instruction or "表" in profile_instruction
+        concise_requested = (
+            bool(profile and profile.tone == "concise")
+            or "reduce text" in profile_instruction.lower()
+            or "精炼" in profile_instruction
+            or "简洁" in profile_instruction
+        )
+        visual_requested = (
+            bool(profile and profile.tone == "visual")
+            or "visual" in profile_instruction.lower()
+            or "图" in profile_instruction
+            or "表" in profile_instruction
+        )
+        chinese_mode = bool(profile and profile.preferred_language == "zh")
 
         visual_elements = []
         for asset_id in asset_ids[:1]:
@@ -97,12 +108,15 @@ class SlideWriterAgent:
             return SlideDraft(
                 slide_id="",
                 slide_type=slide_type,
-                title=paper.title,
+                title=self._format_title(paper.title, False),
                 subtitle=", ".join(paper.authors[:4]) or "Academic paper presentation",
                 purpose="Introduce the paper and the active presentation profile.",
-                key_message=summary.one_sentence_summary,
+                key_message=safe_truncate(summary.one_sentence_summary, 80),
                 bullets=[],
-                speaker_notes=f"Introduce the paper title, authors, and the core topic: {summary.one_sentence_summary}",
+                speaker_notes=self._maybe_notes(
+                    profile,
+                    f"Introduce the paper title, authors, and the core topic: {summary.one_sentence_summary}",
+                ),
                 confidence=0.95,
             )
 
@@ -110,12 +124,12 @@ class SlideWriterAgent:
             return SlideDraft(
                 slide_id="",
                 slide_type=slide_type,
-                title=title,
+                title=self._format_title(title, chinese_mode),
                 subtitle="From motivation to technical content",
                 purpose="Transition into the next section.",
                 key_message="This section shifts from context into the main technical argument.",
                 bullets=[],
-                speaker_notes="Use this slide as a transition before going deeper into the problem and method.",
+                speaker_notes=self._maybe_notes(profile, "Use this slide as a transition before going deeper into the problem and method."),
                 confidence=0.9,
             )
 
@@ -124,13 +138,19 @@ class SlideWriterAgent:
             return SlideDraft(
                 slide_id="",
                 slide_type=slide_type,
-                title="补充证据" if profile and profile.preferred_language == "zh" else title,
+                title="补充证据" if chinese_mode else self._format_title(title, False),
                 subtitle="Extra grounded material for Q&A",
                 purpose="Keep compact backup evidence for deeper discussion.",
                 key_message="Use this slide only when the audience asks for deeper evidence or implementation detail.",
-                bullets=bulletize(pick_primary_text(section_map, "results", fallback=pick_primary_text(section_map, "method")), max_bullets=4),
+                bullets=self._compact_bullets(
+                    bulletize(
+                        pick_primary_text(section_map, "results", fallback=pick_primary_text(section_map, "method")),
+                        max_bullets=4,
+                    ),
+                    chinese_mode,
+                ),
                 visual_elements=visual_elements,
-                speaker_notes="Use this slide as backup material only when questions require more direct evidence from the paper.",
+                speaker_notes=self._maybe_notes(profile, "Use this slide as backup material only when questions require more direct evidence from the paper."),
                 source_refs=source_refs,
                 confidence=0.8 if source_refs else 0.5,
             )
@@ -147,12 +167,15 @@ class SlideWriterAgent:
             ),
             "background": (
                 summary.motivation,
-                bulletize(pick_primary_text(section_map, "background", fallback=pick_primary_text(section_map, "introduction")), max_bullets=4),
+                bulletize(
+                    pick_primary_text(section_map, "background", fallback=pick_primary_text(section_map, "introduction")),
+                    max_bullets=4,
+                ),
                 section_map.get("background", []) or section_map.get("introduction", []),
             ),
             "problem": (
                 summary.problem,
-                [summary.problem, summary.research_gap, "Focus on the exact task framing before discussing the method."],
+                [summary.problem, summary.research_gap, "Clarify the exact research task before method details."],
                 section_map.get("problem", []) or section_map.get("introduction", []),
             ),
             "contributions": (
@@ -167,7 +190,10 @@ class SlideWriterAgent:
             ),
             "technical": (
                 summary.method_overview,
-                bulletize(pick_primary_text(section_map, "technical", fallback=pick_primary_text(section_map, "method")), max_bullets=4),
+                bulletize(
+                    pick_primary_text(section_map, "technical", fallback=pick_primary_text(section_map, "method")),
+                    max_bullets=4,
+                ),
                 section_map.get("technical", []) or section_map.get("method", []),
             ),
             "experiments": (
@@ -182,7 +208,10 @@ class SlideWriterAgent:
             ),
             "analysis": (
                 "Deeper analysis is only included when the paper exposes it.",
-                bulletize(pick_primary_text(section_map, "discussion", fallback=pick_primary_text(section_map, "results")), max_bullets=4),
+                bulletize(
+                    pick_primary_text(section_map, "discussion", fallback=pick_primary_text(section_map, "results")),
+                    max_bullets=4,
+                ),
                 section_map.get("discussion", []) or section_map.get("results", []),
             ),
             "strengths": (
@@ -202,7 +231,7 @@ class SlideWriterAgent:
             ),
             "conclusion": (
                 summary.conclusion,
-                [summary.conclusion, "Revisit the main contributions and the quality of supporting evidence."],
+                [summary.conclusion, "Revisit the main contributions and evidence quality."],
                 section_map.get("conclusion", []) or section_map.get("results", []),
             ),
         }
@@ -210,7 +239,7 @@ class SlideWriterAgent:
             slide_type,
             (summary.one_sentence_summary, [summary.one_sentence_summary], section_map.get(key_section, [])),
         )
-        bullets = [safe_truncate(item, 120) for item in raw_bullets if item][:5]
+        bullets = self._compact_bullets([safe_truncate(item, 120) for item in raw_bullets if item], chinese_mode)
         unsupported_claims = [bullet for bullet in bullets if "positive results" in bullet.lower() and not section_map.get("results")]
         source_refs = make_source_refs(supporting_sections or section_map.get(key_section, []), max_refs=2)
 
@@ -234,19 +263,21 @@ class SlideWriterAgent:
             confidence = min(confidence, 0.55)
 
         if profile and profile.preferred_language == "zh":
-            title = f"{title}（中文）"
+            title = f"{self._format_title(title, True)}（中文）"
         elif profile and profile.preferred_language == "bilingual":
-            title = f"{title} / {title}"
+            title = f"{self._format_title(title, False)} / {self._format_title(title, False)}"
+        else:
+            title = self._format_title(title, False)
 
         return SlideDraft(
             slide_id="",
             slide_type=slide_type,
             title=title,
             purpose=f"Support the audience with a {slide_type} slide grounded in the paper.",
-            key_message=safe_truncate(key_message, 180),
+            key_message=safe_truncate(key_message, 90 if chinese_mode else 140),
             bullets=bullets,
             visual_elements=visual_elements,
-            speaker_notes=self._build_speaker_notes(title, key_message, bullets, source_refs),
+            speaker_notes=self._maybe_notes(profile, self._build_speaker_notes(title, key_message, bullets, source_refs)),
             source_refs=source_refs,
             confidence=confidence,
             unsupported_claims=unsupported_claims,
@@ -259,3 +290,16 @@ class SlideWriterAgent:
             f"Present '{title}' by leading with: {key_message}. Then walk through: {bullet_line}. Cite {source_line} while explaining what is directly supported versus uncertain.",
             420,
         )
+
+    def _compact_bullets(self, bullets: list[str], chinese_mode: bool) -> list[str]:
+        limited = bullets[:3]
+        max_len = 18 if chinese_mode else 80
+        return [safe_truncate(bullet.strip(), max_len) for bullet in limited if bullet.strip()]
+
+    def _format_title(self, title: str, chinese_mode: bool) -> str:
+        return safe_truncate(title.strip(), 12 if chinese_mode else 60)
+
+    def _maybe_notes(self, profile: UserProfile | None, notes: str) -> str:
+        if profile and not profile.include_speaker_notes:
+            return ""
+        return notes
