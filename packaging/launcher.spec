@@ -31,10 +31,20 @@ hiddenimports = collect_submodules("app") + [
     "uvicorn",
     "uvicorn.config",
     "uvicorn.logging",
+    "uvicorn.server",
+    "uvicorn.main",
+    "uvicorn.lifespan",
     "uvicorn.loops.auto",
+    "uvicorn.protocols",
+    "uvicorn.protocols.http",
     "uvicorn.protocols.http.auto",
+    "uvicorn.protocols.http.h11_impl",
+    "uvicorn.protocols.websockets",
     "uvicorn.protocols.websockets.auto",
+    "uvicorn.protocols.websockets.websockets_impl",
     "uvicorn.lifespan.on",
+    "h11",
+    "websockets",
 ]
 
 datas = []

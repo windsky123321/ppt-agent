@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib
+import logging
 import os
 import signal
 import socket
@@ -7,11 +9,11 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
+import urllib.request
 import webbrowser
 from pathlib import Path
 from tkinter import BOTH, END, LEFT, RIGHT, Button, Frame, Label, StringVar, Text, Tk, messagebox
-
-import urllib.request
 
 
 APP_NAME = "PPT Agent"
@@ -60,7 +62,6 @@ class DesktopLauncher:
         self.backend_process: subprocess.Popen | None = None
         self.frontend_process: subprocess.Popen | None = None
         self.backend_thread: threading.Thread | None = None
-        self.backend_server = None
         self.backend_env: dict[str, str] | None = None
 
         self.root = Tk()
@@ -100,6 +101,7 @@ class DesktopLauncher:
         env_pythonpath = self.backend_env.get("PYTHONPATH", "") if self.backend_env else os.environ.get("PYTHONPATH", "")
         storage_dir = BACKEND_ROOT / "app" / "storage"
         storage_init = storage_dir / "__init__.py"
+
         self.log(f"frozen={getattr(sys, 'frozen', False)}")
         self.log(f"app_root={APP_ROOT}")
         self.log(f"runtime_root={RUNTIME_ROOT}")
@@ -111,17 +113,18 @@ class DesktopLauncher:
         self.log(f"frontend_dist={frontend_dist_dir()}")
         self.log(f"sys.path[:5]={sys.path[:5]}")
         self.log(f"PYTHONPATH={env_pythonpath}")
+        self.log(f"backend_start_mode={'embedded' if getattr(sys, 'frozen', False) else 'subprocess'}")
+
         if storage_dir.exists():
             try:
                 storage_items = sorted(str(path.relative_to(BACKEND_ROOT)) for path in storage_dir.rglob("*"))[:20]
                 self.log(f"backend_root/app/storage files={storage_items}")
             except Exception as exc:
-                self.log(f"backend_root/app/storage files=fail: {exc}")
+                self.log(f"backend_root/app/storage files=fail: {exc!r}")
+
         try:
             if backend_path not in sys.path:
                 sys.path.insert(0, backend_path)
-            import importlib
-
             importlib.import_module("app")
             self.log("app import=ok")
             importlib.import_module("app.storage")
@@ -129,13 +132,8 @@ class DesktopLauncher:
             importlib.import_module("app.main")
             self.log("app.main import=ok")
         except Exception as exc:
-            message = str(exc)
-            if "app.storage" in message:
-                self.log(f"app.storage import=fail: {exc}")
-            elif "app.main" in message:
-                self.log(f"app.main import=fail: {exc}")
-            else:
-                self.log(f"app import diagnostics fail: {exc}")
+            self.log(f"app import diagnostics fail: {exc!r}")
+            self.log(traceback.format_exc())
 
     def start_async(self) -> None:
         threading.Thread(target=self.start, daemon=True).start()
@@ -157,10 +155,17 @@ class DesktopLauncher:
             self.open_browser()
             self.set_status("已启动，可以上传 PDF 生成 PPT")
         except Exception as exc:
+            self.log(f"startup exception repr={exc!r}")
+            self.log(traceback.format_exc())
             self.set_status("启动失败")
             message = str(exc)
             if "app.storage" in message:
                 messagebox.showerror(APP_NAME, "启动失败：发布包缺少后端 storage 模块，请重新下载最新构建包。")
+            elif "Unable to configure formatter" in message or "formatter 'default'" in message:
+                messagebox.showerror(
+                    APP_NAME,
+                    "启动失败：后端日志系统初始化失败，请下载最新发布包后重试。技术信息：Unable to configure formatter default。",
+                )
             else:
                 messagebox.showerror(APP_NAME, f"启动失败：{exc}\n请查看 logs/launcher.log")
 
@@ -225,10 +230,12 @@ class DesktopLauncher:
 
         backend_dir = RUNTIME_ROOT / "backend"
         env = dict(self.backend_env or os.environ.copy())
-
         log_handle = (LOG_DIR / "backend.log").open("a", encoding="utf-8")
+
         self.set_status("正在启动后端")
-        self.log(f"backend command={[str(python_exe), '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8000']}")
+        self.log(
+            f"backend command={[str(python_exe), '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8000']}"
+        )
         self.log(f"backend cwd={backend_dir}")
         self.backend_process = subprocess.Popen(
             [str(python_exe), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
@@ -249,15 +256,47 @@ class DesktopLauncher:
         if str(BACKEND_ROOT) not in sys.path:
             sys.path.insert(0, str(BACKEND_ROOT))
 
-        from app.main import app as backend_app
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            force=True,
+        )
+        self.log("before uvicorn import")
         import uvicorn
+
+        self.log("after uvicorn import")
+        self.log(f"uvicorn version={getattr(uvicorn, '__version__', 'unknown')}")
+        try:
+            import uvicorn.logging  # noqa: F401
+
+            self.log("uvicorn.logging import=ok")
+        except Exception as exc:
+            self.log(f"uvicorn.logging import=fail: {exc!r}")
+        self.log("uvicorn logging mode=log_config=None")
+
+        from app.main import app as backend_app
 
         self.set_status("正在启动内置后端")
         self.log("backend command=embedded uvicorn app.main:app")
         self.log(f"backend cwd={BACKEND_ROOT}")
-        config = uvicorn.Config(backend_app, host="127.0.0.1", port=8000, log_level="info")
-        self.backend_server = uvicorn.Server(config)
-        self.backend_thread = threading.Thread(target=self.backend_server.run, daemon=True)
+        self.log("before uvicorn.run")
+
+        def run_embedded_backend() -> None:
+            try:
+                uvicorn.run(
+                    backend_app,
+                    host="127.0.0.1",
+                    port=8000,
+                    log_level="info",
+                    log_config=None,
+                    access_log=True,
+                )
+            except Exception as exc:
+                self.log(f"embedded backend startup repr={exc!r}")
+                self.log(traceback.format_exc())
+                raise
+
+        self.backend_thread = threading.Thread(target=run_embedded_backend, daemon=True)
         self.backend_thread.start()
         self.wait_for(BACKEND_URL + "/api/health", "后端")
 
@@ -299,14 +338,6 @@ class DesktopLauncher:
     def stop(self) -> None:
         self.stop_pid(FRONTEND_PID)
         self.stop_pid(BACKEND_PID)
-
-        if self.backend_server is not None:
-            self.backend_server.should_exit = True
-            if self.backend_thread is not None:
-                self.backend_thread.join(timeout=10)
-            self.backend_server = None
-            self.backend_thread = None
-
         self.set_status("已停止")
 
     def stop_pid(self, pid_file: Path) -> None:

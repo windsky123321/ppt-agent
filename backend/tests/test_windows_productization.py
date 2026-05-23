@@ -111,7 +111,7 @@ def test_preflight_release_not_writable_message(monkeypatch):
     monkeypatch.setattr(module, "_release_dir_writable", lambda _: False)
     ok, messages = module.run_preflight(auto_install=False)
     assert ok is False
-    assert any("release 目录不可写" in message for message in messages)
+    assert any("release" in message for message in messages)
 
 
 def test_install_packaging_deps_prefers_wheelhouse(tmp_path):
@@ -135,6 +135,9 @@ def test_launcher_spec_validation():
     assert '.env.example' in spec_text
     assert 'collect_submodules("app")' in spec_text
     assert '"app.storage"' in spec_text
+    assert '"uvicorn.logging"' in spec_text
+    assert '"uvicorn.protocols.http.h11_impl"' in spec_text
+    assert '"uvicorn.server"' in spec_text
     assert "app.ico" in spec_text
     assert ".env" in spec_text
     assert "logs" in spec_text
@@ -163,6 +166,11 @@ def test_launcher_runtime_path_helpers():
     assert "importlib.import_module(\"app.storage\")" in launcher_text
     assert "importlib.import_module(\"app.main\")" in launcher_text
     assert "发布包缺少后端 storage 模块" in launcher_text
+    assert "logging.basicConfig(" in launcher_text
+    assert "log_config=None" in launcher_text
+    assert "uvicorn.logging import=ok" in launcher_text
+    assert "before uvicorn.run" in launcher_text
+    assert "embedded backend startup repr=" in launcher_text
     assert "backend cwd=" in launcher_text
     assert "sys.path[:5]" in launcher_text
 

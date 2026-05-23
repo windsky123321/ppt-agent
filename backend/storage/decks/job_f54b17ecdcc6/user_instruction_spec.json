@@ -1,0 +1,40 @@
+{
+  "detected_language": "en",
+  "audience": "graduate",
+  "presentation_goal": "critique",
+  "preferred_language": "zh",
+  "tone": "concise",
+  "slide_count_target": 15,
+  "talk_duration_minutes": null,
+  "math_level": "simplified",
+  "include_speaker_notes": true,
+  "include_limitations": true,
+  "include_discussion_questions": true,
+  "include_source_footers": null,
+  "visual_preference": "use_paper_figures",
+  "sections_to_emphasize": [
+    "method",
+    "results"
+  ],
+  "sections_to_reduce": [],
+  "must_include": [
+    "research problem",
+    "method",
+    "architecture",
+    "results",
+    "limitations",
+    "strengths",
+    "discussion questions"
+  ],
+  "avoid": [
+    "literal_translation"
+  ],
+  "style_requirements": [
+    "clean_academic",
+    "natural_spoken_style"
+  ],
+  "special_requests": [],
+  "unclear_requirements": [],
+  "conflict_warnings": [],
+  "compressed_summary": "请帮我把这篇论文做成中文组会汇报 PPT，听众是计算机视觉方向研究生。总页数控制在 15 页左右，重点讲研究问题、方法框架、核心创新、实验结果和局限性。不要逐字翻译论文，要像我在组会上讲一样自然。公式只保留最关键的一个，并用通俗语言解释。尽量使用论文里的图和表。每页加演讲稿。最后加一页优点、一页局限性、一页讨论问题。风格简洁、学术、不要太花。"
+}
