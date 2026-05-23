@@ -14,11 +14,26 @@ def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="ignore")
 
 
+def pyinstaller_command_available(python_exe: str = sys.executable) -> bool:
+    commands = [
+        [python_exe, "-m", "PyInstaller", "--version"],
+        ["pyinstaller", "--version"],
+    ]
+    for command in commands:
+        result = _run(command)
+        if result.returncode == 0:
+            return True
+    return False
+
+
 def has_local_pyinstaller_wheel(wheelhouse: Path = WHEELHOUSE) -> bool:
     return any(wheelhouse.glob("pyinstaller-*.whl")) or any(wheelhouse.glob("PyInstaller-*.whl"))
 
 
 def install_pyinstaller(python_exe: str = sys.executable, wheelhouse: Path = WHEELHOUSE) -> tuple[bool, str]:
+    if pyinstaller_command_available(python_exe):
+        return True, "已检测到可用的 PyInstaller。"
+
     if has_local_pyinstaller_wheel(wheelhouse):
         print("检测到本地 wheelhouse，优先离线安装 PyInstaller……")
         result = _run(
@@ -34,15 +49,20 @@ def install_pyinstaller(python_exe: str = sys.executable, wheelhouse: Path = WHE
             ]
         )
         if result.returncode == 0:
-            return True, "已通过本地 wheelhouse 安装 PyInstaller。"
+            if pyinstaller_command_available(python_exe):
+                return True, "已通过本地 wheelhouse 安装 PyInstaller。"
+            return False, "离线安装已执行，但仍无法通过 python -m PyInstaller 调用。"
         message = (result.stdout + "\n" + result.stderr).strip()
         print(message)
         return False, "离线安装 PyInstaller 失败。"
 
     print("未检测到本地 wheelhouse，正在尝试在线安装 PyInstaller……")
+    _run([python_exe, "-m", "pip", "install", "--upgrade", "pip"])
     result = _run([python_exe, "-m", "pip", "install", "pyinstaller"])
     if result.returncode == 0:
-        return True, "已通过在线方式安装 PyInstaller。"
+        if pyinstaller_command_available(python_exe):
+            return True, "已通过在线方式安装 PyInstaller。"
+        return False, "已安装 PyInstaller，但仍无法通过 python -m PyInstaller 调用。"
     message = (result.stdout + "\n" + result.stderr).strip()
     if message:
         print(message)

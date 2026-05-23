@@ -5,6 +5,8 @@ chcp 65001 >nul
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 set "BUILD_EXIT_CODE=0"
+set "CI_STRICT_MODE=0"
+if /I "%GITHUB_ACTIONS%"=="true" set "CI_STRICT_MODE=1"
 
 if not exist logs mkdir logs
 if not exist release mkdir release
@@ -59,10 +61,19 @@ if not exist frontend\dist\index.html (
   call :log [复用] 已检测到 frontend/dist，跳过前端重建
 )
 
+call :log [检查] 正在检测 PyInstaller……
+call :ensure_pyinstaller
+if errorlevel 1 (
+  call :fail PyInstaller 安装或检测失败。请查看 logs/build_windows.log 中的详细诊断。
+  if "%CI_STRICT_MODE%"=="1" goto end
+  goto portable_only
+)
+
 call :log [检查] 开始执行 Windows 打包预检
 python packaging\preflight_windows.py >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
   call :fail PyInstaller 安装或预检 Windows 打包预检失败。请先阅读日志，再按提示处理 PyInstaller 或路径问题。
+  if "%CI_STRICT_MODE%"=="1" goto end
   goto portable_only
 )
 
@@ -73,12 +84,18 @@ del /q release\PPT-Agent.exe >> "%LOG_FILE%" 2>&1
 call :log [打包] 正在打包 PPT-Agent.exe……
 python -m PyInstaller packaging\launcher.spec --clean --noconfirm >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
-  call :fail spec 打包 EXE 构建失败，本次仅生成 portable 包。
+  call :log [诊断] python -m PyInstaller 调用失败，尝试回退到 pyinstaller……
+  pyinstaller packaging\launcher.spec --clean --noconfirm >> "%LOG_FILE%" 2>&1
+)
+if errorlevel 1 (
+  call :fail spec 打包 EXE 构建失败。
+  if "%CI_STRICT_MODE%"=="1" goto end
   goto portable_only
 )
 
 if not exist dist\PPT-Agent.exe (
-  call :fail spec 打包 未找到 dist\PPT-Agent.exe，本次仅生成 portable 包。
+  call :fail spec 打包 未找到 dist\PPT-Agent.exe。
+  if "%CI_STRICT_MODE%"=="1" goto end
   goto portable_only
 )
 
@@ -111,6 +128,10 @@ echo [完成] 打包完成，输出目录：release/
 goto end
 
 :portable_only
+if "%CI_STRICT_MODE%"=="1" (
+  call :fail CI 严格模式 GitHub Actions 必须生成 release\PPT-Agent.exe，本次不会回退到 portable-only 成功。
+  goto end
+)
 call :build_portable
 if errorlevel 1 (
   call :fail 文件复制 Portable 包生成失败，请检查 release 目录权限。
@@ -122,6 +143,25 @@ echo [提示] EXE 构建失败，本次仅生成 portable 包。
 echo [提示] Portable 包目录：release\PPT-Agent-Portable
 echo [提示] 构建日志：logs\build_windows.log
 goto end
+
+:ensure_pyinstaller
+python -m PyInstaller --version >> "%LOG_FILE%" 2>&1
+if not errorlevel 1 exit /b 0
+call :log [检查] 未检测到 PyInstaller，正在尝试安装……
+python -m pip install --upgrade pip >> "%LOG_FILE%" 2>&1
+python -m pip install pyinstaller >> "%LOG_FILE%" 2>&1
+python -m PyInstaller --version >> "%LOG_FILE%" 2>&1
+if not errorlevel 1 exit /b 0
+call :log [诊断] python -m PyInstaller 调用失败，尝试检查 pyinstaller……
+pyinstaller --version >> "%LOG_FILE%" 2>&1
+if not errorlevel 1 exit /b 0
+call :log [诊断] python --version
+python --version >> "%LOG_FILE%" 2>&1
+call :log [诊断] python -m pip --version
+python -m pip --version >> "%LOG_FILE%" 2>&1
+call :log [诊断] python -m pip show pyinstaller
+python -m pip show pyinstaller >> "%LOG_FILE%" 2>&1
+exit /b 1
 
 :copy_release_docs
 copy /Y README.md release\README.md >> "%LOG_FILE%" 2>&1

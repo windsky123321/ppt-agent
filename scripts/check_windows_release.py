@@ -9,6 +9,17 @@ RELEASE_DIR = ROOT / "release"
 
 
 def main() -> int:
+    print(f"当前目录：{ROOT}")
+    print(f"packaging/launcher.spec 是否存在：{(ROOT / 'packaging' / 'launcher.spec').exists()}")
+    print(f"desktop/launcher.py 是否存在：{(ROOT / 'desktop' / 'launcher.py').exists()}")
+    print(f"frontend/dist/index.html 是否存在：{(ROOT / 'frontend' / 'dist' / 'index.html').exists()}")
+    if RELEASE_DIR.exists():
+        print("release 目录内容：")
+        for path in sorted(RELEASE_DIR.rglob("*")):
+            print(f"- {path.relative_to(ROOT)}")
+    else:
+        print("release 目录不存在。")
+
     required = [
         RELEASE_DIR / "PPT-Agent.exe",
         RELEASE_DIR / "README.md",

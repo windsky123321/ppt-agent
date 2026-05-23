@@ -42,13 +42,28 @@ jobs:
       - name: 安装 PyInstaller
         shell: powershell
         run: |
+          python --version
+          python -m pip --version
+          python -m pip install --upgrade pip
           python -m pip install pyinstaller
+          python -m pip show pyinstaller
+          python -m PyInstaller --version
 
       - name: 构建前端
         shell: powershell
         run: |
           Set-Location -LiteralPath frontend
           npm.cmd run build
+
+      - name: 构建前诊断
+        shell: powershell
+        run: |
+          Get-Location
+          if (-not (Test-Path "packaging/launcher.spec")) { throw "缺少 packaging/launcher.spec" }
+          if (-not (Test-Path "desktop/launcher.py")) { throw "缺少 desktop/launcher.py" }
+          if (-not (Test-Path "frontend/dist/index.html")) { throw "缺少 frontend/dist/index.html" }
+          Get-ChildItem packaging
+          Get-ChildItem desktop
 
       - name: 执行 Windows 打包脚本
         shell: cmd

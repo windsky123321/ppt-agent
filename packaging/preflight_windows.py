@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import py_compile
 import subprocess
 import sys
@@ -9,6 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PACKAGING_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = ROOT / "backend"
 FRONTEND_DIST = ROOT / "frontend" / "dist" / "index.html"
 RELEASE_DIR = ROOT / "release"
@@ -16,10 +16,13 @@ SPEC_PATH = ROOT / "packaging" / "launcher.spec"
 ICON_PATH = ROOT / "packaging" / "app.ico"
 LAUNCHER_PATH = ROOT / "desktop" / "launcher.py"
 
+if str(PACKAGING_DIR) not in sys.path:
+    sys.path.insert(0, str(PACKAGING_DIR))
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.main import _frontend_dist_dir  # noqa: E402
+from install_packaging_deps import install_pyinstaller, pyinstaller_command_available  # noqa: E402
 
 
 def _pip_available(python_exe: str) -> bool:
@@ -33,8 +36,12 @@ def _pip_available(python_exe: str) -> bool:
     return result.returncode == 0
 
 
-def _pyinstaller_available() -> bool:
-    return importlib.util.find_spec("PyInstaller") is not None
+def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="ignore")
+
+
+def _pyinstaller_available(python_exe: str) -> bool:
+    return pyinstaller_command_available(python_exe)
 
 
 def _release_dir_writable(release_dir: Path) -> bool:
@@ -84,17 +91,21 @@ def run_preflight(auto_install: bool = True, python_exe: str = sys.executable) -
     if messages:
         return False, messages
 
-    if not _pyinstaller_available():
+    if not _pyinstaller_available(python_exe):
         print("未检测到 PyInstaller，正在尝试自动安装……")
         if auto_install:
-            from install_packaging_deps import install_pyinstaller
-
             success, message = install_pyinstaller(python_exe=python_exe)
             print(message)
             if not success:
                 return False, [message]
         else:
             return False, ["未检测到 PyInstaller，正在尝试自动安装……"]
+
+    version_result = _run([python_exe, "-m", "PyInstaller", "--version"])
+    if version_result.returncode != 0:
+        fallback_result = _run(["pyinstaller", "--version"])
+        if fallback_result.returncode != 0:
+            return False, ["PyInstaller 已安装但无法正常调用，请检查 Python 环境或重新安装。"]
 
     return True, ["Windows 打包预检通过。"]
 

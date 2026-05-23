@@ -72,17 +72,17 @@ def test_model_config_output_dir_roundtrip(tmp_path, monkeypatch):
 
 def test_preflight_missing_pyinstaller_message():
     module = load_module("preflight_windows_missing_pyinstaller", "packaging/preflight_windows.py")
-    module._pyinstaller_available = lambda: False
+    module._pyinstaller_available = lambda _python_exe: False
     ok, messages = module.run_preflight(auto_install=False)
     assert ok is False
-    assert any("未检测到 PyInstaller，正在尝试自动安装" in message for message in messages)
+    assert any("PyInstaller" in message for message in messages)
 
 
 def test_preflight_missing_frontend_dist_message(monkeypatch, tmp_path):
     module = load_module("preflight_windows_missing_dist", "packaging/preflight_windows.py")
     monkeypatch.setattr(module, "FRONTEND_DIST", tmp_path / "missing" / "index.html")
     monkeypatch.setattr(module, "_frontend_dist_dir", lambda: tmp_path / "missing")
-    monkeypatch.setattr(module, "_pyinstaller_available", lambda: True)
+    monkeypatch.setattr(module, "_pyinstaller_available", lambda _python_exe: True)
     monkeypatch.setattr(module, "_release_dir_writable", lambda _: True)
     ok, messages = module.run_preflight(auto_install=False)
     assert ok is False
@@ -91,7 +91,7 @@ def test_preflight_missing_frontend_dist_message(monkeypatch, tmp_path):
 
 def test_preflight_release_not_writable_message(monkeypatch):
     module = load_module("preflight_windows_release_not_writable", "packaging/preflight_windows.py")
-    monkeypatch.setattr(module, "_pyinstaller_available", lambda: True)
+    monkeypatch.setattr(module, "_pyinstaller_available", lambda _python_exe: True)
     monkeypatch.setattr(module, "_release_dir_writable", lambda _: False)
     ok, messages = module.run_preflight(auto_install=False)
     assert ok is False
@@ -136,17 +136,21 @@ def test_build_release_script_smoke_strings():
     script_text = (ROOT / "build_release_windows.bat").read_text(encoding="utf-8")
     assert "packaging\\preflight_windows.py" in script_text
     assert "python -m PyInstaller packaging\\launcher.spec" in script_text
-    assert "未检测到 PyInstaller" in script_text or "Windows 打包预检失败" in script_text
+    assert "python -m PyInstaller --version" in script_text
+    assert "python -m pip install pyinstaller" in script_text
     assert "logs\\build_windows.log" in script_text
     assert "release\\PPT-Agent.exe" in script_text
     assert "release\\PPT-Agent-Portable" in script_text
+    assert "CI_STRICT_MODE" in script_text
 
 
 def test_github_actions_workflow_exists_and_is_windows():
     workflow_text = (ROOT / ".github" / "workflows" / "build-windows-exe.yml").read_text(encoding="utf-8")
     assert "name: Build Windows EXE" in workflow_text
     assert "windows-latest" in workflow_text
+    assert "python -m pip install --upgrade pip" in workflow_text
     assert "python -m pip install pyinstaller" in workflow_text
+    assert "python -m PyInstaller --version" in workflow_text
     assert "build_release_windows.bat" in workflow_text
     assert "actions/upload-artifact@v4" in workflow_text
     assert "PPT-Agent-Windows-Release" in workflow_text
@@ -159,6 +163,11 @@ def test_release_check_script_exists_and_validates_expected_files():
     assert "WINDOWS_QUICKSTART.md" in script_text
     assert ".env.example" in script_text
     assert "未找到 PPT-Agent.exe" in script_text
+    assert "当前目录" in script_text
+    assert "release 目录内容" in script_text
+    assert "packaging/launcher.spec 是否存在" in script_text
+    assert "desktop/launcher.py 是否存在" in script_text
+    assert "frontend/dist/index.html 是否存在" in script_text
     assert "logs" in script_text
     assert "outputs" in script_text
     assert "temp" in script_text
