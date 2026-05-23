@@ -111,13 +111,18 @@ def test_launcher_spec_validation():
     spec_text = (ROOT / "packaging" / "launcher.spec").read_text(encoding="utf-8")
     assert 'name="PPT-Agent"' in spec_text
     assert "frontend/dist" in spec_text
-    assert "packaging/app.ico" in spec_text or "app.ico" in spec_text
+    assert 'project_root / "desktop" / "launcher.py"' in spec_text
+    assert "packaging/desktop/launcher.py" not in spec_text
+    assert "pathex=[str(project_root), str(backend_root)]" in spec_text
+    assert 'project_root / "frontend" / "dist"' in spec_text
+    assert 'project_root / "backend" / "app"' in spec_text
+    assert "app.ico" in spec_text
     assert ".env" in spec_text
     assert "logs" in spec_text
     assert "outputs" in spec_text
     assert "temp" in spec_text
     assert "uploads" in spec_text
-    assert "storage" in spec_text
+    assert "release" in spec_text
 
 
 def test_launcher_python_compiles():
@@ -184,6 +189,7 @@ def test_ci_build_script_exists_and_uses_python_module_pyinstaller():
     assert "python -m pip install pyinstaller" in script_text
     assert "python -m PyInstaller --version" in script_text
     assert "python -m PyInstaller packaging/launcher.spec --noconfirm --clean" in script_text
+    assert 'Test-Path -LiteralPath "desktop/launcher.py"' in script_text
     assert "release/PPT-Agent.exe" in script_text
     assert ".env.example" in script_text
     assert ".env" in script_text
@@ -192,6 +198,9 @@ def test_ci_build_script_exists_and_uses_python_module_pyinstaller():
     assert "temp" in script_text
     assert "uploads" in script_text
     assert "Current directory:" in script_text
+    assert "launcher.spec preview:" in script_text
+    assert "desktop contents:" in script_text
+    assert "packaging contents:" in script_text
     assert "CI Windows EXE build succeeded: release/PPT-Agent.exe" in script_text
 
 

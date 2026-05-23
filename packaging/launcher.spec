@@ -6,10 +6,14 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_submodules
 
 
-root = Path.cwd()
-backend_root = root / "backend"
-frontend_dist = root / "frontend" / "dist"
-icon_path = root / "packaging" / "app.ico"
+spec_dir = Path(SPECPATH).resolve()
+project_root = spec_dir.parent
+launcher_script = str(project_root / "desktop" / "launcher.py")
+backend_root = project_root / "backend"
+backend_app = project_root / "backend" / "app"
+frontend_dist = project_root / "frontend" / "dist"
+icon_path = project_root / "packaging" / "app.ico"
+
 if str(backend_root) not in sys.path:
     sys.path.insert(0, str(backend_root))
 
@@ -23,13 +27,17 @@ hiddenimports = collect_submodules("app") + [
     "uvicorn.lifespan.on",
 ]
 
+datas = []
+if frontend_dist.exists():
+    datas.append((str(frontend_dist), "frontend/dist"))
+if backend_app.exists():
+    datas.append((str(backend_app), "backend/app"))
+
 a = Analysis(
-    ["desktop/launcher.py"],
-    pathex=[str(root), str(backend_root)],
+    [launcher_script],
+    pathex=[str(project_root), str(backend_root)],
     binaries=[],
-    datas=[
-        (str(frontend_dist), "frontend/dist"),
-    ],
+    datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
@@ -70,5 +78,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=str(icon_path),
+    icon=str(icon_path) if icon_path.exists() else None,
 )

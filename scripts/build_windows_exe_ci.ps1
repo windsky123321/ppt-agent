@@ -53,6 +53,15 @@ if (-not (Test-Path -LiteralPath "frontend/dist/index.html")) {
     Pop-Location
 }
 
+Write-Host "launcher.spec exists:"
+Test-Path -LiteralPath "packaging/launcher.spec"
+Write-Host "desktop/launcher.py exists:"
+Test-Path -LiteralPath "desktop/launcher.py"
+Write-Host "frontend/dist/index.html exists:"
+Test-Path -LiteralPath "frontend/dist/index.html"
+Write-Host "launcher.spec preview:"
+Get-Content -LiteralPath "packaging/launcher.spec" | Select-Object -First 80
+
 if (Test-Path -LiteralPath "release") {
     Remove-Item -LiteralPath "release" -Recurse -Force
 }
@@ -93,6 +102,22 @@ if (-not (Test-Path -LiteralPath "dist/PPT-Agent.exe")) {
     }
     else {
         Write-Host "build directory not found"
+    }
+
+    if (Test-Path -LiteralPath "desktop") {
+        Write-Host "desktop contents:"
+        Get-ChildItem -LiteralPath "desktop" -Recurse -Force
+    }
+    else {
+        Write-Host "desktop directory not found"
+    }
+
+    if (Test-Path -LiteralPath "packaging") {
+        Write-Host "packaging contents:"
+        Get-ChildItem -LiteralPath "packaging" -Recurse -Force
+    }
+    else {
+        Write-Host "packaging directory not found"
     }
 
     exit 1
