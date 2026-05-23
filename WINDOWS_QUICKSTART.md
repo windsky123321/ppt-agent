@@ -1,12 +1,16 @@
 # Windows 快速开始 v0.1.0
 
-## 下载安装
+## 下载
 
-1. 打开仓库 `Actions`
-2. 进入 `Build Windows EXE`
-3. 下载 artifact `PPT-Agent-Windows-Release`
-4. 解压后进入 `release/`
-5. 双击 `PPT-Agent.exe`
+1. 打开 GitHub Release 页面
+2. 下载 `PPT-Agent-Windows-Release.zip`
+3. 解压后进入 `release/`
+
+## 运行
+
+1. 双击 `PPT-Agent.exe`
+2. 如果 Windows 阻止运行，点击“更多信息” -> “仍要运行”
+3. 等待浏览器自动打开
 
 ## 第一次启动
 
@@ -21,21 +25,7 @@
 2. 填写 API Key，或切换到 Mock 模式
 3. 返回工作台上传 PDF
 4. 点击“生成 PPT”
-5. 在“生成结果”中下载 PPT
-
-## 本机构建
-
-```bat
-build_release_windows.bat
-```
-
-输出目录：
-
-- `release/PPT-Agent.exe`
-- `release/README.md`
-- `release/WINDOWS_QUICKSTART.md`
-- `release/RELEASE_NOTES.md`
-- `release/.env.example`
+5. 在“生成结果”中下载 `final_deck.pptx`
 
 ## Mock 模式
 
@@ -55,9 +45,9 @@ build_release_windows.bat
 
 ## 常见问题
 
-- Windows 阻止运行：右键 EXE，检查“解除锁定”。
-- API Key 未配置：去“模型配置”填写，或改用 Mock 模式。
-- 端口占用：关闭占用 `8000` 端口的程序。
-- 生成失败：查看 `logs/backend.log` 与 `logs/launcher.log`。
-- 找不到下载文件：查看“生成结果”里的 `final_deck.pptx` 路径。
-- 杀毒软件误报：优先使用最新 artifact，并加入白名单。
+- Windows 阻止运行
+- API Key 未配置
+- 端口占用
+- 生成失败
+- 找不到下载文件
+- 杀毒软件误报

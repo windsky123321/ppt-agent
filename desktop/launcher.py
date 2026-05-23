@@ -17,6 +17,7 @@ from tkinter import BOTH, END, LEFT, RIGHT, Button, Frame, Label, StringVar, Tex
 
 
 APP_NAME = "PPT Agent"
+APP_VERSION = "v0.1.0"
 BACKEND_URL = "http://127.0.0.1:8000"
 FRONTEND_DEV_URL = "http://127.0.0.1:5173"
 
@@ -65,11 +66,11 @@ class DesktopLauncher:
         self.backend_env: dict[str, str] | None = None
 
         self.root = Tk()
-        self.root.title(APP_NAME)
+        self.root.title(f"{APP_NAME} {APP_VERSION}")
         self.root.geometry("720x520")
         self.status = StringVar(value="未启动")
 
-        Label(self.root, text="PPT Agent", font=("Microsoft YaHei", 20, "bold")).pack(pady=(18, 4))
+        Label(self.root, text=f"{APP_NAME} {APP_VERSION}", font=("Microsoft YaHei", 20, "bold")).pack(pady=(18, 4))
         Label(self.root, textvariable=self.status, font=("Microsoft YaHei", 11)).pack(pady=(0, 12))
 
         toolbar = Frame(self.root)
