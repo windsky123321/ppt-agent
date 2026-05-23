@@ -19,7 +19,7 @@ BACKEND_URL = "http://127.0.0.1:8000"
 FRONTEND_DEV_URL = "http://127.0.0.1:5173"
 
 
-def resource_root() -> Path:
+def app_root() -> Path:
     if getattr(sys, "frozen", False):
         return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
     return Path(__file__).resolve().parents[1]
@@ -31,13 +31,27 @@ def runtime_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
-RESOURCE_ROOT = resource_root()
+APP_ROOT = app_root()
 RUNTIME_ROOT = runtime_root()
-BACKEND_RESOURCE_DIR = RESOURCE_ROOT / "backend"
-FRONTEND_RESOURCE_DIR = RESOURCE_ROOT / "frontend" / "dist"
+BACKEND_ROOT = APP_ROOT / "backend"
+FRONTEND_DIST = APP_ROOT / "frontend" / "dist"
 LOG_DIR = RUNTIME_ROOT / "logs"
 BACKEND_PID = LOG_DIR / "backend.pid"
 FRONTEND_PID = LOG_DIR / "frontend.pid"
+
+
+def frontend_candidates() -> list[Path]:
+    return [
+        FRONTEND_DIST / "index.html",
+        RUNTIME_ROOT / "frontend" / "dist" / "index.html",
+    ]
+
+
+def frontend_dist_dir() -> Path:
+    for candidate in frontend_candidates():
+        if candidate.exists():
+            return candidate.parent
+    return FRONTEND_DIST
 
 
 class DesktopLauncher:
@@ -47,6 +61,7 @@ class DesktopLauncher:
         self.frontend_process: subprocess.Popen | None = None
         self.backend_thread: threading.Thread | None = None
         self.backend_server = None
+        self.backend_env: dict[str, str] | None = None
 
         self.root = Tk()
         self.root.title(APP_NAME)
@@ -80,12 +95,34 @@ class DesktopLauncher:
         self.status.set(value)
         self.log(value)
 
+    def log_runtime_diagnostics(self) -> None:
+        backend_path = str(BACKEND_ROOT)
+        env_pythonpath = self.backend_env.get("PYTHONPATH", "") if self.backend_env else os.environ.get("PYTHONPATH", "")
+        self.log(f"frozen={getattr(sys, 'frozen', False)}")
+        self.log(f"app_root={APP_ROOT}")
+        self.log(f"runtime_root={RUNTIME_ROOT}")
+        self.log(f"backend_root={BACKEND_ROOT}")
+        self.log(f"frontend_dist={frontend_dist_dir()}")
+        self.log(f"sys.path[:5]={sys.path[:5]}")
+        self.log(f"PYTHONPATH={env_pythonpath}")
+        try:
+            if backend_path not in sys.path:
+                sys.path.insert(0, backend_path)
+            import importlib
+
+            importlib.import_module("app.storage")
+            self.log("app.storage import=ok")
+        except Exception as exc:
+            self.log(f"app.storage import=fail: {exc}")
+
     def start_async(self) -> None:
         threading.Thread(target=self.start, daemon=True).start()
 
     def start(self) -> None:
         try:
             self.ensure_env()
+            self.prepare_backend_path()
+            self.log_runtime_diagnostics()
             self.ensure_ports()
             if getattr(sys, "frozen", False):
                 self.start_backend_embedded()
@@ -111,7 +148,7 @@ class DesktopLauncher:
             path.mkdir(parents=True, exist_ok=True)
 
         env_path = RUNTIME_ROOT / ".env"
-        example_candidates = [RUNTIME_ROOT / ".env.example", RESOURCE_ROOT / ".env.example"]
+        example_candidates = [RUNTIME_ROOT / ".env.example", APP_ROOT / ".env.example"]
         example_path = next((path for path in example_candidates if path.exists()), None)
         if not env_path.exists() and example_path:
             env_path.write_text(example_path.read_text(encoding="utf-8"), encoding="utf-8")
@@ -134,11 +171,20 @@ class DesktopLauncher:
                 raise RuntimeError(f"端口 {port} 已被占用，请先关闭占用程序")
 
     def static_frontend_ready(self) -> bool:
-        candidates = [
-            FRONTEND_RESOURCE_DIR / "index.html",
-            RUNTIME_ROOT / "frontend" / "dist" / "index.html",
-        ]
-        return any(path.exists() for path in candidates)
+        return any(path.exists() for path in frontend_candidates())
+
+    def prepare_backend_path(self) -> None:
+        backend_path = str(BACKEND_ROOT)
+        if backend_path not in sys.path:
+            sys.path.insert(0, backend_path)
+
+        env = os.environ.copy()
+        current_pythonpath = env.get("PYTHONPATH", "")
+        if current_pythonpath:
+            env["PYTHONPATH"] = backend_path + os.pathsep + current_pythonpath
+        else:
+            env["PYTHONPATH"] = backend_path
+        self.backend_env = env
 
     def start_backend_subprocess(self) -> None:
         if self.health_ok(BACKEND_URL + "/api/health"):
@@ -150,11 +196,12 @@ class DesktopLauncher:
             python_exe = Path(sys.executable)
 
         backend_dir = RUNTIME_ROOT / "backend"
-        env = os.environ.copy()
-        env["PYTHONPATH"] = str(backend_dir)
+        env = dict(self.backend_env or os.environ.copy())
 
         log_handle = (LOG_DIR / "backend.log").open("a", encoding="utf-8")
         self.set_status("正在启动后端")
+        self.log(f"backend command={[str(python_exe), '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8000']}")
+        self.log(f"backend cwd={backend_dir}")
         self.backend_process = subprocess.Popen(
             [str(python_exe), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
             cwd=backend_dir,
@@ -171,13 +218,15 @@ class DesktopLauncher:
             self.set_status("后端已在运行")
             return
 
-        if str(BACKEND_RESOURCE_DIR) not in sys.path:
-            sys.path.insert(0, str(BACKEND_RESOURCE_DIR))
+        if str(BACKEND_ROOT) not in sys.path:
+            sys.path.insert(0, str(BACKEND_ROOT))
 
         from app.main import app as backend_app
         import uvicorn
 
         self.set_status("正在启动内置后端")
+        self.log("backend command=embedded uvicorn app.main:app")
+        self.log(f"backend cwd={BACKEND_ROOT}")
         config = uvicorn.Config(backend_app, host="127.0.0.1", port=8000, log_level="info")
         self.backend_server = uvicorn.Server(config)
         self.backend_thread = threading.Thread(target=self.backend_server.run, daemon=True)

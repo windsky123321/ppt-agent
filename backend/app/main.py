@@ -53,6 +53,10 @@ def _frontend_dist_dir() -> Path:
     return candidates[0]
 
 
+def frontend_dist_available() -> bool:
+    return _frontend_dist_dir().joinpath("index.html").exists()
+
+
 frontend_dist = _frontend_dist_dir()
 if frontend_dist.exists():
     assets_dir = frontend_dist / "assets"

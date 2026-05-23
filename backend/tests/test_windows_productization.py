@@ -116,6 +116,9 @@ def test_launcher_spec_validation():
     assert "pathex=[str(project_root), str(backend_root)]" in spec_text
     assert 'project_root / "frontend" / "dist"' in spec_text
     assert 'project_root / "backend" / "app"' in spec_text
+    assert '.env.example' in spec_text
+    assert 'collect_submodules("app")' in spec_text
+    assert '"app.storage"' in spec_text
     assert "app.ico" in spec_text
     assert ".env" in spec_text
     assert "logs" in spec_text
@@ -127,6 +130,16 @@ def test_launcher_spec_validation():
 
 def test_launcher_python_compiles():
     py_compile.compile(str(ROOT / "desktop" / "launcher.py"), doraise=True)
+
+
+def test_launcher_runtime_path_helpers():
+    launcher_text = (ROOT / "desktop" / "launcher.py").read_text(encoding="utf-8")
+    assert "BACKEND_ROOT = APP_ROOT / \"backend\"" in launcher_text
+    assert "FRONTEND_DIST = APP_ROOT / \"frontend\" / \"dist\"" in launcher_text
+    assert "env[\"PYTHONPATH\"] = backend_path" in launcher_text
+    assert "importlib.import_module(\"app.storage\")" in launcher_text
+    assert "backend cwd=" in launcher_text
+    assert "sys.path[:5]" in launcher_text
 
 
 def test_windows_scripts_exist_and_remain_callable():

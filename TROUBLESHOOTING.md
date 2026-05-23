@@ -48,3 +48,14 @@ python -m pip install pyinstaller
 - `release/PPT-Agent-Portable/start_windows.bat`
 
 后续再根据 `logs/build_windows.log` 修复 EXE 构建问题。
+
+## exe 启动失败：No module named app.storage
+
+- 这通常表示发布包中缺少后端模块，或 EXE 运行时的 `backend` 路径配置错误
+- 请重新运行最新 GitHub Actions 的 `Build Windows EXE`
+- 下载最新 artifact 后重新测试
+- 查看 `logs/launcher.log`，重点关注：
+  - `frozen`
+  - `backend_root`
+  - `PYTHONPATH`
+  - `app.storage import`

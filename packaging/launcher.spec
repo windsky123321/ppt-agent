@@ -13,11 +13,20 @@ backend_root = project_root / "backend"
 backend_app = project_root / "backend" / "app"
 frontend_dist = project_root / "frontend" / "dist"
 icon_path = project_root / "packaging" / "app.ico"
+env_example = project_root / ".env.example"
 
 if str(backend_root) not in sys.path:
     sys.path.insert(0, str(backend_root))
 
 hiddenimports = collect_submodules("app") + [
+    "app",
+    "app.storage",
+    "app.api",
+    "app.agents",
+    "app.schemas",
+    "app.llm",
+    "app.prompts",
+    "app.utils",
     "uvicorn",
     "uvicorn.config",
     "uvicorn.logging",
@@ -32,6 +41,8 @@ if frontend_dist.exists():
     datas.append((str(frontend_dist), "frontend/dist"))
 if backend_app.exists():
     datas.append((str(backend_app), "backend/app"))
+if env_example.exists():
+    datas.append((str(env_example), "."))
 
 a = Analysis(
     [launcher_script],
