@@ -20,7 +20,7 @@ export function SettingsPanel({ settings, deckMode, onDeckModeChange, onChange }
         <SelectField label="语言" value={settings.language} onChange={(v) => patch("language", v as GenerationSettings["language"])} options={["en", "zh", "bilingual"]} />
         <SelectField label="听众" value={settings.audience} onChange={(v) => patch("audience", v as GenerationSettings["audience"])} options={["general", "undergraduate", "graduate", "expert", "investor", "lab_meeting", "thesis_defense"]} />
         <label className="text-sm text-slate-700">
-          页数目标
+          目标页数
           <input className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" type="number" min={5} max={30} value={settings.slide_count} onChange={(event) => patch("slide_count", Number(event.target.value))} />
         </label>
         <SelectField label="主题" value={settings.theme} onChange={(v) => patch("theme", v as GenerationSettings["theme"])} options={["academic_clean", "dark_modern", "minimalist_white"]} />
@@ -29,7 +29,7 @@ export function SettingsPanel({ settings, deckMode, onDeckModeChange, onChange }
         <SelectField label="数学深度" value={settings.math_level} onChange={(v) => patch("math_level", v as GenerationSettings["math_level"])} options={["simplified", "balanced", "detailed"]} />
       </div>
       <div className="mt-4 space-y-3">
-        <Checkbox label="包含演讲稿" checked={settings.include_speaker_notes} onChange={(value) => patch("include_speaker_notes", value)} />
+        <Checkbox label="包含演讲备注" checked={settings.include_speaker_notes} onChange={(value) => patch("include_speaker_notes", value)} />
         <Checkbox label="包含来源页脚" checked={settings.include_source_footers} onChange={(value) => patch("include_source_footers", value)} />
         <Checkbox label="包含局限性" checked={settings.include_limitations} onChange={(value) => patch("include_limitations", value)} />
         <Checkbox label="包含讨论问题" checked={settings.include_discussion_questions} onChange={(value) => patch("include_discussion_questions", value)} />

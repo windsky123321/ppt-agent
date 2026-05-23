@@ -7,7 +7,7 @@ type Props = {
 export function OutlinePreview({ parsedPaper }: Props) {
   return (
     <section className="rounded-3xl bg-white/85 p-6 shadow-card backdrop-blur">
-      <h2 className="text-xl font-semibold text-ink">Outline Preview</h2>
+      <h2 className="text-xl font-semibold text-ink">论文结构预览</h2>
       {parsedPaper ? (
         <>
           <p className="mt-2 text-sm text-slate-600">{parsedPaper.title}</p>
@@ -18,13 +18,16 @@ export function OutlinePreview({ parsedPaper }: Props) {
                 <div className="mt-1 text-xs text-slate-500">
                   p.{section.page_start} - p.{section.page_end}
                 </div>
-                <p className="mt-2 text-sm text-slate-600">{section.text.slice(0, 180)}{section.text.length > 180 ? "..." : ""}</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {section.text.slice(0, 180)}
+                  {section.text.length > 180 ? "..." : ""}
+                </p>
               </div>
             ))}
           </div>
         </>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">Section outline will appear here after upload and parsing.</p>
+        <p className="mt-2 text-sm text-slate-500">上传并解析 PDF 后，这里会显示论文标题和主要章节结构。</p>
       )}
     </section>
   );

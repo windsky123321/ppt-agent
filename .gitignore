@@ -18,8 +18,11 @@ uploads/
 __pycache__/
 *.py[cod]
 /storage/
+/backend/storage/
 !backend/app/storage/
 !backend/app/storage/**
+backend/app/storage/__pycache__/
+backend/app/storage/**/*.pyc
 *.pptx
 *.pdf
 *.exe

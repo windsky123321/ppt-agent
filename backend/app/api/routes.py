@@ -86,7 +86,7 @@ async def upload_paper(
         try:
             parsed_instruction = instruction_parser.run(LongInstructionInput(raw_text=long_instruction, language_hint=language))
         except Exception as exc:
-            raise HTTPException(status_code=400, detail=f"长需求解析失败: {exc}") from exc
+            raise HTTPException(status_code=400, detail=f"长需求解析失败：{exc}") from exc
 
     try:
         job = pipeline.run(
@@ -98,7 +98,7 @@ async def upload_paper(
             parsed_instruction=parsed_instruction,
         )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"生成流程失败: {exc}") from exc
+        raise HTTPException(status_code=500, detail=f"生成流程失败：{exc}") from exc
 
     parsed_paper = storage.load_json_artifact(job.job_id, "parsed_paper.json")
     return UploadResponse(
@@ -136,7 +136,7 @@ def get_artifacts(deck_id: str):
 def download_artifact(deck_id: str, artifact_name: str):
     artifact_path = storage.get_artifact_path(deck_id, artifact_name)
     if not artifact_path.exists():
-        raise HTTPException(status_code=404, detail="未找到该 artifact。")
+        raise HTTPException(status_code=404, detail="未找到该产物。")
     return FileResponse(path=artifact_path, filename=artifact_name)
 
 
@@ -199,7 +199,7 @@ def regenerate_slide(deck_id: str, payload: RegenerateSlideRequest = Body(...)):
             long_instruction=payload.long_instruction,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail="缺少 deck 相关 artifacts。") from exc
+        raise HTTPException(status_code=404, detail="缺少 deck 相关产物。") from exc
     return {
         "job": job,
         "download_url": f"/api/decks/{deck_id}/download",

@@ -28,7 +28,7 @@ import { WarningsPanel } from "../components/WarningsPanel";
 import { useAppState } from "../stores/useAppState";
 import type { CriticReport, GroundingReport, PromptTemplate, RuntimeModelConfig, RuntimeModelConfigView, UserProfile } from "../types";
 
-type TabKey = "workspace" | "model" | "output" | "logs" | "skills" | "about";
+type TabKey = "workspace" | "model" | "output" | "logs" | "about";
 
 function createPromptTemplateFromInstruction(content: string): PromptTemplate {
   const now = new Date().toISOString();
@@ -93,6 +93,10 @@ function viewToConfig(view: RuntimeModelConfigView): RuntimeModelConfig {
   };
 }
 
+function hasSavedMaskedKey(masked: string | null | undefined): boolean {
+  return Boolean(masked && masked.trim());
+}
+
 export function App() {
   const state = useAppState();
   const [activeTab, setActiveTab] = useState<TabKey>("workspace");
@@ -140,11 +144,15 @@ export function App() {
 
   async function handleGenerate() {
     if (!state.backendConnected) {
-      state.setError("后端服务未连接，请检查启动器是否正在运行。");
+      state.setError("后端未连接，请确认 PPT-Agent.exe 已启动，或查看 launcher 日志。");
       return;
     }
     if (!state.selectedFile) {
       state.setError("请先选择一篇 PDF 论文。");
+      return;
+    }
+    if (!apiKeyReady) {
+      state.setError("当前未配置可用模型。请前往“模型配置”填写 API Key，或切换到 Mock 模式后重试。");
       return;
     }
 
@@ -154,8 +162,9 @@ export function App() {
       const result = await uploadPaper(state.selectedFile, state.settings, state.activeProfileId || undefined, state.deckMode);
       state.setResult(result);
       await refreshArtifacts(result.job.deck_id);
+      state.setModelStatus(`生成完成：${result.job.deck_id}`);
     } catch (error) {
-      state.setError(error instanceof Error ? error.message : "生成失败。");
+      state.setError(error instanceof Error ? error.message : "生成失败。请查看日志后重试。");
     } finally {
       state.setLoading(false);
     }
@@ -190,7 +199,7 @@ export function App() {
       state.setResult((current) => (current ? { ...current, job: response.job } : current));
       await refreshArtifacts(state.result.job.deck_id);
     } catch (error) {
-      state.setError(error instanceof Error ? error.message : "单页重生成失败。");
+      state.setError(error instanceof Error ? error.message : "单页精修失败。");
     } finally {
       state.setLoading(false);
     }
@@ -247,6 +256,16 @@ export function App() {
   }
 
   const activeProfileName = state.profiles.find((profile) => profile.id === state.activeProfileId)?.name ?? "";
+  const llmNeedsKey = state.modelConfig.llm_provider !== "mock";
+  const apiKeyReady = !llmNeedsKey || Boolean(state.modelConfig.llm_api_key.trim() || hasSavedMaskedKey(state.modelConfigView?.llm_api_key_masked));
+  const canGenerate = state.backendConnected && Boolean(state.selectedFile) && apiKeyReady && !state.loading;
+  const generateHint = !state.backendConnected
+    ? "请先双击运行 PPT-Agent.exe，确认浏览器已自动打开。"
+    : !apiKeyReady
+      ? "第一步：去“模型配置”填写 API Key；如果只是验收流程，可直接切换到 Mock 模式。"
+      : !state.selectedFile
+        ? "第二步：上传论文 PDF。"
+        : "第三步：检查模板与设置，然后点击“生成 PPT”。生成完成后可在右侧下载结果。";
 
   return (
     <main className="min-h-screen bg-[#f6f7fb] px-4 py-6 text-ink md:px-8">
@@ -255,7 +274,7 @@ export function App() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-normal">PPT 智能体</h1>
-              <p className="mt-1 text-sm text-slate-600">上传论文 PDF，生成可编辑的专业汇报 PPT。</p>
+              <p className="mt-1 text-sm text-slate-600">上传论文 PDF，生成可编辑的专业中文或双语汇报 PPT。</p>
             </div>
             <div className="rounded-md bg-white px-3 py-2 text-sm text-slate-700 shadow-sm">
               {state.backendConnected ? "服务已连接" : "服务未连接"}
@@ -266,85 +285,89 @@ export function App() {
             <TabButton active={activeTab === "model"} onClick={() => setActiveTab("model")} label="模型配置" />
             <TabButton active={activeTab === "output"} onClick={() => setActiveTab("output")} label="输出目录" />
             <TabButton active={activeTab === "logs"} onClick={() => setActiveTab("logs")} label="日志" />
-            <TabButton active={activeTab === "skills"} onClick={() => setActiveTab("skills")} label="技能库" />
             <TabButton active={activeTab === "about"} onClick={() => setActiveTab("about")} label="关于" />
           </nav>
         </header>
 
         {activeTab === "workspace" ? (
-          <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-            <div className="space-y-5">
-              <StatusPanel
-                loading={state.loading}
-                error={state.error}
-                job={state.result?.job ?? null}
-                health={state.health}
-                backendConnected={state.backendConnected}
-                modelStatus={state.modelStatus}
-                profileName={activeProfileName}
-                deckMode={state.deckMode}
-                hasLongInstruction={Boolean(state.settings.long_instruction.trim())}
-                onGenerate={handleGenerate}
-                disabled={state.loading}
-              />
-              <UploadPanel selectedFile={state.selectedFile} onFileChange={state.setSelectedFile} />
-              <ProfilePanel
-                profiles={state.profiles}
-                activeProfileId={state.activeProfileId}
-                editingProfile={state.editingProfile}
-                onSelect={(profileId) => {
-                  state.setActiveProfileId(profileId);
-                  const selected = state.profiles.find((profile) => profile.id === profileId) ?? null;
-                  state.setEditingProfile(selected);
-                }}
-                onEditChange={state.setEditingProfile}
-                onSave={handleSaveProfile}
-              />
-              <SettingsPanel settings={state.settings} deckMode={state.deckMode} onDeckModeChange={state.setDeckMode} onChange={state.setSettings} />
-              <InstructionStudioPanel
-                longInstruction={state.settings.long_instruction}
-                parsedInstruction={state.parsedInstruction}
-                promptTemplates={state.promptTemplates}
-                selectedTemplateId={state.selectedTemplateId}
-                onInstructionChange={(value) => state.setSettings({ ...state.settings, long_instruction: value })}
-                onTemplateSelect={(templateId) => {
-                  state.setSelectedTemplateId(templateId);
-                  const template = state.promptTemplates.find((item) => item.id === templateId);
-                  if (template) state.setSettings({ ...state.settings, long_instruction: template.content });
-                }}
-                onParse={handleParseInstruction}
-                onClear={() => {
-                  state.setSettings({ ...state.settings, long_instruction: "" });
-                  state.setParsedInstruction(null);
-                }}
-                onSaveTemplate={handleSavePromptTemplate}
-                onUseExample={() => {
-                  const example = state.promptTemplates[0];
-                  if (example) {
-                    state.setSelectedTemplateId(example.id);
-                    state.setSettings({ ...state.settings, long_instruction: example.content });
-                  }
-                }}
-              />
-              <RegeneratePanel
-                deckId={state.result?.job.deck_id ?? null}
-                slideId={state.regenSlideId}
-                instruction={state.regenInstruction}
-                longInstruction={state.regenLongInstruction}
-                onSlideIdChange={state.setRegenSlideId}
-                onInstructionChange={state.setRegenInstruction}
-                onLongInstructionChange={state.setRegenLongInstruction}
-                onRegenerate={handleRegenerateSlide}
-                disabled={state.loading}
-              />
-            </div>
+          <>
+            <QuickStartPanel />
+            <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+              <div className="space-y-5">
+                <StatusPanel
+                  loading={state.loading}
+                  error={state.error}
+                  job={state.result?.job ?? null}
+                  health={state.health}
+                  backendConnected={state.backendConnected}
+                  modelStatus={state.modelStatus}
+                  profileName={activeProfileName}
+                  deckMode={state.deckMode}
+                  hasLongInstruction={Boolean(state.settings.long_instruction.trim())}
+                  onGenerate={handleGenerate}
+                  disabled={!canGenerate}
+                  generateHint={generateHint}
+                  apiKeyReady={apiKeyReady}
+                />
+                <UploadPanel selectedFile={state.selectedFile} onFileChange={state.setSelectedFile} />
+                <ProfilePanel
+                  profiles={state.profiles}
+                  activeProfileId={state.activeProfileId}
+                  editingProfile={state.editingProfile}
+                  onSelect={(profileId) => {
+                    state.setActiveProfileId(profileId);
+                    const selected = state.profiles.find((profile) => profile.id === profileId) ?? null;
+                    state.setEditingProfile(selected);
+                  }}
+                  onEditChange={state.setEditingProfile}
+                  onSave={handleSaveProfile}
+                />
+                <SettingsPanel settings={state.settings} deckMode={state.deckMode} onDeckModeChange={state.setDeckMode} onChange={state.setSettings} />
+                <InstructionStudioPanel
+                  longInstruction={state.settings.long_instruction}
+                  parsedInstruction={state.parsedInstruction}
+                  promptTemplates={state.promptTemplates}
+                  selectedTemplateId={state.selectedTemplateId}
+                  onInstructionChange={(value) => state.setSettings({ ...state.settings, long_instruction: value })}
+                  onTemplateSelect={(templateId) => {
+                    state.setSelectedTemplateId(templateId);
+                    const template = state.promptTemplates.find((item) => item.id === templateId);
+                    if (template) state.setSettings({ ...state.settings, long_instruction: template.content });
+                  }}
+                  onParse={handleParseInstruction}
+                  onClear={() => {
+                    state.setSettings({ ...state.settings, long_instruction: "" });
+                    state.setParsedInstruction(null);
+                  }}
+                  onSaveTemplate={handleSavePromptTemplate}
+                  onUseExample={() => {
+                    const example = state.promptTemplates[0];
+                    if (example) {
+                      state.setSelectedTemplateId(example.id);
+                      state.setSettings({ ...state.settings, long_instruction: example.content });
+                    }
+                  }}
+                />
+                <RegeneratePanel
+                  deckId={state.result?.job.deck_id ?? null}
+                  slideId={state.regenSlideId}
+                  instruction={state.regenInstruction}
+                  longInstruction={state.regenLongInstruction}
+                  onSlideIdChange={state.setRegenSlideId}
+                  onInstructionChange={state.setRegenInstruction}
+                  onLongInstructionChange={state.setRegenLongInstruction}
+                  onRegenerate={handleRegenerateSlide}
+                  disabled={state.loading}
+                />
+              </div>
 
-            <div className="space-y-5">
-              <ArtifactsPanel job={state.result?.job ?? null} artifacts={state.artifacts} />
-              <WarningsPanel criticReport={state.criticReport} groundingReport={state.groundingReport} />
-              <OutlinePreview parsedPaper={state.result?.parsed_paper ?? null} />
+              <div className="space-y-5">
+                <ArtifactsPanel job={state.result?.job ?? null} artifacts={state.artifacts} />
+                <WarningsPanel criticReport={state.criticReport} groundingReport={state.groundingReport} />
+                <OutlinePreview parsedPaper={state.result?.parsed_paper ?? null} />
+              </div>
             </div>
-          </div>
+          </>
         ) : null}
 
         {activeTab === "model" ? (
@@ -362,12 +385,65 @@ export function App() {
           />
         ) : null}
 
-        {activeTab === "output" ? <InfoPanel title="输出目录" rows={["默认输出：storage/decks", `当前配置：${state.modelConfig.output_dir}`, "每次生成会保存 PPTX 和全部中间 JSON。"]} /> : null}
-        {activeTab === "logs" ? <InfoPanel title="日志" rows={["启动日志：logs/launcher.log", "后端日志：logs/backend.log", "前端日志：logs/frontend.log", "如果启动失败，请先查看 launcher.log 和 backend.log。"]} /> : null}
-        {activeTab === "skills" ? <InfoPanel title="技能库" rows={["预留：论文精读、组会汇报、答辩汇报、商业化路演。", "当前版本已内置 Prompt Template，可在工作台长需求区域使用。"]} /> : null}
-        {activeTab === "about" ? <InfoPanel title="关于" rows={["PPT 智能体 Windows 预览版", "默认启用 High-Quality Low-Token Mode。", "默认模型：gpt-5.5，fallback：gpt-4.1-mini。", "Mock 模式无需 API Key。"]} /> : null}
+        {activeTab === "output" ? (
+          <InfoPanel
+            title="输出目录"
+            rows={[
+              "默认输出目录：storage/decks",
+              `当前配置：${state.modelConfig.output_dir}`,
+              "每次生成都会保存 PPTX 和中间 JSON。",
+              "如果你找不到结果，请先查看右侧“生成结果”里的 final_deck.pptx 路径。",
+            ]}
+          />
+        ) : null}
+
+        {activeTab === "logs" ? (
+          <InfoPanel
+            title="日志"
+            rows={[
+              "启动日志：logs/launcher.log",
+              "后端日志：logs/backend.log",
+              "前端日志：logs/frontend.log",
+              "如果启动或生成失败，请先查看 launcher.log 和 backend.log。",
+            ]}
+          />
+        ) : null}
+
+        {activeTab === "about" ? (
+          <InfoPanel
+            title="关于"
+            rows={[
+              "PPT 智能体 Windows 发布候选版",
+              "默认启用 High-Quality Low-Token Mode",
+              "默认模型：gpt-5.5；fallback：gpt-4.1-mini",
+              "Mock 模式无需 API Key，可用于首轮验收和回归测试",
+            ]}
+          />
+        ) : null}
       </div>
     </main>
+  );
+}
+
+function QuickStartPanel() {
+  const steps = [
+    "第一步：去“模型配置”填写 API Key，或切换到 Mock 模式。",
+    "第二步：上传论文 PDF。",
+    "第三步：选择模板、Deck 模式和输出设置。",
+    "第四步：点击“生成 PPT”等待完成。",
+    "第五步：在右侧下载 PPT 或查看产物路径。",
+  ];
+  return (
+    <section className="rounded-3xl bg-white/85 p-6 shadow-card backdrop-blur">
+      <h2 className="text-xl font-semibold text-ink">首次使用指引</h2>
+      <div className="mt-4 grid gap-3 md:grid-cols-5">
+        {steps.map((step) => (
+          <div key={step} className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            {step}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -385,7 +461,9 @@ function InfoPanel({ title, rows }: { title: string; rows: string[] }) {
       <h2 className="text-lg font-semibold">{title}</h2>
       <div className="mt-4 space-y-2">
         {rows.map((row) => (
-          <p key={row} className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">{row}</p>
+          <p key={row} className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            {row}
+          </p>
         ))}
       </div>
     </section>

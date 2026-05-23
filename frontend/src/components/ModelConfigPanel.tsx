@@ -39,27 +39,6 @@ const PRESETS: Record<string, Partial<RuntimeModelConfig>> = {
     vision_model: "your-vision-model",
     ...LOW_TOKEN_DEFAULTS,
   },
-  deepseek: {
-    llm_provider: "deepseek",
-    llm_base_url: "https://api.deepseek.com/v1",
-    llm_model: "deepseek-chat",
-    ...LOW_TOKEN_DEFAULTS,
-  },
-  gemini: {
-    llm_provider: "gemini",
-    llm_base_url: "",
-    llm_model: "gemini-1.5-pro",
-    vision_provider: "gemini",
-    vision_base_url: "",
-    vision_model: "gemini-1.5-pro",
-    ...LOW_TOKEN_DEFAULTS,
-  },
-  anthropic: {
-    llm_provider: "anthropic",
-    llm_base_url: "",
-    llm_model: "claude-3-5-sonnet-latest",
-    ...LOW_TOKEN_DEFAULTS,
-  },
 };
 
 type Props = {
@@ -81,25 +60,26 @@ export function ModelConfigPanel({ config, savedView, status, onChange, onSave, 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-ink">模型配置</h2>
-          <p className="mt-1 text-sm text-slate-600">配置 API Key、模型、视觉模型和低 Token 默认策略。</p>
+          <p className="mt-1 text-sm text-slate-600">在这里配置 API Key、模型、视觉模型和 Low Token Mode 参数。</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-ink" onClick={onUseMock}>Mock 模式</button>
+          <button className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-ink" onClick={onUseMock}>切换到 Mock 模式</button>
           <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-ink ring-1 ring-slate-200" onClick={onTest}>测试连接</button>
           <button className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white" onClick={onSave}>保存配置</button>
         </div>
+      </div>
+
+      <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        首次启动建议先使用 Mock 模式完成验收。真实 API Key 只会保存在本机配置中，不会写入 EXE、日志或发布包。
       </div>
 
       <label className="mt-4 block text-sm text-slate-700">
         常用预设
         <select className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2" defaultValue="" onChange={(event) => event.target.value && applyPreset(event.target.value)}>
           <option value="">请选择预设</option>
-          <option value="mock">Mock Local</option>
+          <option value="mock">Mock</option>
           <option value="openai">OpenAI</option>
           <option value="compatible">OpenAI-Compatible</option>
-          <option value="deepseek">DeepSeek</option>
-          <option value="gemini">Gemini</option>
-          <option value="anthropic">Anthropic</option>
         </select>
       </label>
 
@@ -122,7 +102,7 @@ export function ModelConfigPanel({ config, savedView, status, onChange, onSave, 
         <Checkbox label="启用 Repair" checked={config.enable_repair} onChange={(value) => patch("enable_repair", value)} />
         <Checkbox label="启用 Patch Mode" checked={config.patch_mode} onChange={(value) => patch("patch_mode", value)} />
         <NumberField label="最大修复轮数" value={config.max_repair_loops} min={0} max={5} onChange={(value) => patch("max_repair_loops", value)} />
-        <NumberField label="普通生成 Tokens" value={config.normal_max_output_tokens} min={1000} max={12000} onChange={(value) => patch("normal_max_output_tokens", value)} />
+        <NumberField label="正常生成 Tokens" value={config.normal_max_output_tokens} min={1000} max={12000} onChange={(value) => patch("normal_max_output_tokens", value)} />
         <NumberField label="修订 Tokens" value={config.revision_max_output_tokens} min={300} max={4000} onChange={(value) => patch("revision_max_output_tokens", value)} />
         <NumberField label="Temperature" value={config.temperature} min={0} max={1} step={0.1} onChange={(value) => patch("temperature", value)} />
       </div>

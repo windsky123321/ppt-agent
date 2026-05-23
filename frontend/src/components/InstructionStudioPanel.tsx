@@ -30,7 +30,7 @@ export function InstructionStudioPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-ink">长需求 / Prompt Studio</h2>
-          <p className="mt-2 text-sm text-slate-600">可以直接粘贴完整自然语言需求，系统会先解析成结构化配置，再驱动现有 PPT 流程。</p>
+          <p className="mt-2 text-sm text-slate-600">你可以直接输入完整需求，系统会先解析要求，再驱动现有 PPT 生成流程。</p>
         </div>
         <div className="text-sm text-slate-500">{longInstruction.length} 字符</div>
       </div>
@@ -53,15 +53,15 @@ export function InstructionStudioPanel({
           className="mt-2 min-h-56 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm"
           value={longInstruction}
           onChange={(event) => onInstructionChange(event.target.value)}
-          placeholder="请帮我把这篇论文做成中文组会汇报 PPT，听众是计算机视觉方向研究生。总页数控制在 15 页左右，重点讲研究问题、方法框架、核心创新、实验结果和局限性。不要逐字翻译论文，要像我在组会上讲一样自然。公式只保留最关键的一个，并用通俗语言解释。尽量使用论文里的图和表，每张图要说明它证明了什么。每页加演讲稿。最后加一页优点、一页局限性、一页讨论问题。风格简洁、学术、不要太花。"
+          placeholder="例如：请把这篇论文做成中文组会汇报 PPT，控制在 12-15 页，重点讲研究问题、方法、实验结果和局限性，少堆文字，多解释图表。"
         />
       </label>
 
       <div className="mt-4 flex flex-wrap gap-3">
         <button className="rounded-2xl bg-ink px-4 py-2 text-sm font-semibold text-white" onClick={onParse}>解析需求</button>
         <button className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-ink" onClick={onClear}>清空</button>
-        <button className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-ink" onClick={onSaveTemplate}>保存为需求模板</button>
-        <button className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-ink" onClick={onUseExample}>使用示例提示词</button>
+        <button className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-ink" onClick={onSaveTemplate}>保存为模板</button>
+        <button className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-ink" onClick={onUseExample}>使用示例</button>
       </div>
 
       {parsedInstruction ? (

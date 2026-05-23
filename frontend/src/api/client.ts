@@ -88,12 +88,12 @@ export async function regenerateSlides(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ slide_ids: slideIds, instruction, profile_id: profileId, long_instruction: longInstruction }),
   });
-  return parseJsonOrThrow(response, "单页重生成失败。");
+  return parseJsonOrThrow(response, "单页精修失败。");
 }
 
 export async function getModelConfig(): Promise<RuntimeModelConfigView> {
   const response = await fetch(`${API_BASE}/api/config/model`);
-  return parseJsonOrThrow(response, "后端模型配置读取失败。");
+  return parseJsonOrThrow(response, "读取模型配置失败。");
 }
 
 export async function saveModelConfig(config: RuntimeModelConfig): Promise<RuntimeModelConfigView> {
@@ -125,7 +125,7 @@ export async function parseInstruction(rawText: string, languageHint: string): P
 
 export async function fetchPromptTemplates(): Promise<PromptTemplate[]> {
   const response = await fetch(`${API_BASE}/api/prompt-templates`);
-  const payload = await parseJsonOrThrow(response, "提示词模板读取失败。");
+  const payload = await parseJsonOrThrow(response, "读取提示词模板失败。");
   return payload.templates;
 }
 
@@ -135,5 +135,5 @@ export async function savePromptTemplate(template: PromptTemplate): Promise<Prom
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(template),
   });
-  return parseJsonOrThrow(response, "提示词模板保存失败。");
+  return parseJsonOrThrow(response, "保存提示词模板失败。");
 }

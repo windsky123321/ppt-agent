@@ -8,12 +8,14 @@ type Props = {
 export function WarningsPanel({ criticReport, groundingReport }: Props) {
   return (
     <section className="rounded-3xl bg-white/85 p-6 shadow-card backdrop-blur">
-      <h2 className="text-xl font-semibold text-ink">Critic 与 Grounding</h2>
+      <h2 className="text-xl font-semibold text-ink">质量检查</h2>
       <div className="mt-4 space-y-3">
         <div className="rounded-2xl bg-slate-50 px-4 py-3">
           <div className="text-sm font-semibold text-ink">Critic 结果</div>
           <p className="mt-1 text-sm text-slate-600">
-            {criticReport ? `${criticReport.summary} Score: ${criticReport.deck_score}。Approved: ${criticReport.approved ? "yes" : "no"}。` : "尚未生成 critic 报告。"}
+            {criticReport
+              ? `${criticReport.summary}；评分：${criticReport.deck_score}；审核：${criticReport.approved ? "通过" : "未通过"}`
+              : "尚未生成 Critic 报告。"}
           </p>
         </div>
         {criticReport?.issues.slice(0, 6).map((issue) => (
@@ -34,7 +36,7 @@ export function WarningsPanel({ criticReport, groundingReport }: Props) {
               </p>
             ))
           ) : (
-            <p className="mt-1 text-sm text-slate-600">当前没有 grounding 警告。</p>
+            <p className="mt-1 text-sm text-slate-600">当前没有 Grounding 警告。</p>
           )}
         </div>
       </div>
