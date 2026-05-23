@@ -1,0 +1,54 @@
+{
+  "paper_id": "mock_paper_1",
+  "title": "Mock Multimodal Paper",
+  "authors": ["Alice Example", "Bob Example"],
+  "abstract": "This paper proposes a grounded multimodal presentation pipeline for academic papers.",
+  "sections": [
+    {
+      "title": "Abstract",
+      "text": "This paper proposes a grounded multimodal presentation pipeline for academic papers.",
+      "page_start": 1,
+      "page_end": 1
+    },
+    {
+      "title": "Introduction",
+      "text": "The paper motivates controllable and grounded slide generation for research communication.",
+      "page_start": 1,
+      "page_end": 1
+    },
+    {
+      "title": "Method",
+      "text": "The method combines parsing, asset extraction, grounded slide writing, and PPTX generation.",
+      "page_start": 2,
+      "page_end": 2
+    },
+    {
+      "title": "Experiments",
+      "text": "Experiments evaluate mock-mode generation and inspect artifact quality.",
+      "page_start": 3,
+      "page_end": 3
+    },
+    {
+      "title": "Results",
+      "text": "Results show grounded editable decks and more useful figure-aware slides.",
+      "page_start": 4,
+      "page_end": 4
+    },
+    {
+      "title": "Conclusion",
+      "text": "The work concludes that personalized paper-to-PPT generation is feasible in local-first mode.",
+      "page_start": 5,
+      "page_end": 5
+    }
+  ],
+  "pages": [
+    {"page_number": 1, "text": "Mock page 1"},
+    {"page_number": 2, "text": "Mock page 2"},
+    {"page_number": 3, "text": "Mock page 3"},
+    {"page_number": 4, "text": "Mock page 4"},
+    {"page_number": 5, "text": "Mock page 5"}
+  ],
+  "figures": [],
+  "tables": [],
+  "references": []
+}

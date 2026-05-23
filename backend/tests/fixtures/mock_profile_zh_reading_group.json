@@ -1,0 +1,20 @@
+{
+  "id": "profile_test_zh",
+  "name": "Chinese Graduate Reading Group",
+  "audience": "graduate",
+  "presentation_goal": "critique",
+  "preferred_language": "zh",
+  "tone": "academic",
+  "slide_count_target": 14,
+  "talk_duration_minutes": 18,
+  "math_level": "balanced",
+  "include_speaker_notes": true,
+  "include_limitations": true,
+  "include_discussion_questions": true,
+  "include_source_footers": true,
+  "theme_id": "academic_clean",
+  "brand_colors": ["#1d4ed8", "#0f172a"],
+  "title_font": "Aptos Display",
+  "body_font": "Aptos",
+  "custom_instructions": "Focus on methodological rigor."
+}

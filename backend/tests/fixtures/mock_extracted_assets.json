@@ -1,0 +1,34 @@
+{
+  "assets": [
+    {
+      "id": "figure_001",
+      "asset_type": "figure",
+      "page_number": 2,
+      "bbox": null,
+      "original_caption": "Figure 1: System architecture overview.",
+      "nearby_text": "The method combines parsing and grounded generation.",
+      "image_path": "storage/mock/assets/figure_001.png",
+      "short_visual_description": "Architecture overview figure for the pipeline.",
+      "technical_interpretation": "Shows the end-to-end pipeline from paper parsing to PPT generation.",
+      "why_it_matters": "Useful for method explanation.",
+      "suggested_slide_usage": "method",
+      "importance_score": 0.9,
+      "source_reference": "p. 2, Fig. 1"
+    },
+    {
+      "id": "table_001",
+      "asset_type": "table",
+      "page_number": 4,
+      "bbox": null,
+      "original_caption": "Table 1: Main quantitative results.",
+      "nearby_text": "Results show grounded editable decks.",
+      "image_path": "storage/mock/assets/table_001.png",
+      "short_visual_description": "Main quantitative results table.",
+      "technical_interpretation": "Summarizes evaluation outcomes.",
+      "why_it_matters": "Useful for results slide.",
+      "suggested_slide_usage": "result",
+      "importance_score": 0.95,
+      "source_reference": "p. 4, Table 1"
+    }
+  ]
+}

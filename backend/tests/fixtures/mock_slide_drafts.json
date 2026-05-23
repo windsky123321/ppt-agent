@@ -1,0 +1,36 @@
+{
+  "slides": [
+    {
+      "slide_id": "slide_01",
+      "slide_type": "title",
+      "title": "Mock Multimodal Paper",
+      "subtitle": "Alice Example, Bob Example",
+      "purpose": "Introduce the paper.",
+      "key_message": "A grounded multimodal presentation pipeline.",
+      "bullets": [],
+      "visual_elements": [],
+      "speaker_notes": "Introduce the paper.",
+      "source_refs": [],
+      "confidence": 0.95,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_02",
+      "slide_type": "method",
+      "title": "Method Overview",
+      "subtitle": "",
+      "purpose": "Explain the method.",
+      "key_message": "The method combines parsing and grounded slide writing.",
+      "bullets": [
+        "Parse the paper into structured sections.",
+        "Extract figures and tables into reusable assets.",
+        "Write grounded editable slides."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "",
+      "source_refs": [],
+      "confidence": 0.35,
+      "unsupported_claims": []
+    }
+  ]
+}
