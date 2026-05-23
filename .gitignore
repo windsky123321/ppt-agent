@@ -12,3 +12,13 @@ storage/
 *.pdf
 .env
 frontend/.vite/
+
+logs/
+outputs/
+temp/
+uploads/
+release/
+build/
+dist/
+*.exe
+.env

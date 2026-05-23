@@ -25,6 +25,10 @@ class DeckPlannerAgent:
 
     def _run_heuristic(self, paper: ParsedPaper, summary: PaperSummary, settings: GenerationSettings, profile: UserProfile | None, assets: ExtractedAssets | None) -> DeckPlan:
         section_map = build_section_map(paper)
+        instruction_text = (settings.long_instruction or "") + " " + ((profile.custom_instructions if profile else "") or "")
+        lowered_instruction = instruction_text.lower()
+        wants_backup = "backup" in lowered_instruction or "答辩" in instruction_text or (settings.slide_count >= 18)
+        quick_mode = settings.slide_count <= 8
         blueprint = [
             ("title", "Title", "Introduce the paper, authors, and context.", ""),
             ("takeaway", "One-Slide Takeaway", "State the main idea and outcome in one slide.", "abstract"),
@@ -42,6 +46,20 @@ class DeckPlannerAgent:
             ("discussion", "Discussion Questions", "Frame useful reading-group discussion points.", "discussion"),
             ("conclusion", "Conclusion", "Close with the final assessment and takeaway.", "conclusion"),
         ]
+        if wants_backup:
+            blueprint.append(("backup", "Backup Evidence", "Keep extra grounded evidence available for discussion.", "results"))
+
+        if quick_mode:
+            blueprint = [
+                ("title", "Title", "Introduce the paper quickly.", ""),
+                ("takeaway", "One-Slide Takeaway", "State the main idea and outcome in one slide.", "abstract"),
+                ("background", "Background / Motivation", "Explain why the problem matters.", "background"),
+                ("method", "Method Overview", "Present the method at a high level.", "method"),
+                ("results", "Main Results", "Present the main result evidence from the paper.", "results"),
+                ("limitations", "Limitations", "Be explicit about weaknesses and open risks.", "limitations"),
+                ("discussion", "Discussion Questions", "Frame useful discussion points.", "discussion"),
+                ("conclusion", "Conclusion", "Close with the final assessment and takeaway.", "conclusion"),
+            ]
 
         slides = []
         asset_lookup = {}
@@ -54,6 +72,8 @@ class DeckPlannerAgent:
                 if slide_type == "analysis" and not (section_map.get("discussion") or section_map.get("results")):
                     continue
                 if slide_type == "limitations" and not summary.limitations:
+                    continue
+                if slide_type == "discussion" and not settings.include_discussion_questions:
                     continue
             slides.append(
                 {

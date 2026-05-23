@@ -6,6 +6,7 @@ from uuid import uuid4
 from app.agents.critic_agent import CriticAgent
 from app.agents.deck_planner_agent import DeckPlannerAgent
 from app.agents.grounding_checker import GroundingChecker
+from app.agents.instruction_parser_agent import InstructionParserAgent
 from app.agents.paper_summary_agent import PaperSummaryAgent
 from app.agents.pipeline_models import PipelineArtifacts
 from app.agents.regenerate_slide_agent import RegenerateSlideAgent
@@ -19,10 +20,14 @@ from app.ppt.ppt_builder import PPTBuilder
 from app.schemas.assets import ExtractedAssets
 from app.schemas.common import GenerationSettings
 from app.schemas.deck import DeckPlan, JobStatus, PaperSummary, SlideDrafts
+from app.schemas.instructions import LongInstructionInput, ParsedInstructionSpec, PromptMergeReport
 from app.schemas.paper import ParsedPaper
 from app.schemas.profile import UserProfile
+from app.schemas.runtime_config import RuntimeModelConfig
+from app.storage.config_storage import ConfigStorage
 from app.storage.file_storage import FileStorage
 from app.storage.profile_storage import ProfileStorage
+from app.utils.instruction_utils import merge_profile_with_instruction
 from app.utils.profile_utils import build_inline_profile, default_profiles, profile_to_settings
 
 
@@ -30,6 +35,7 @@ class PaperToPPTPipeline:
     def __init__(self) -> None:
         self.settings = get_settings()
         self.storage = FileStorage()
+        self.config_storage = ConfigStorage()
         self.profile_storage = ProfileStorage()
         self.parser = PDFParser()
         self.asset_extractor = AssetExtractor()
@@ -37,16 +43,28 @@ class PaperToPPTPipeline:
         self.critic = CriticAgent()
         self.repair = RepairAgent()
         self.regenerator = RegenerateSlideAgent(SlideWriterAgent(create_llm_provider()))
+        self.instruction_parser = InstructionParserAgent()
         self._ensure_default_profiles()
 
-    def run(self, pdf_bytes: bytes, original_filename: str, settings: GenerationSettings, profile: UserProfile | None = None) -> JobStatus:
+    def run(self, pdf_bytes: bytes, original_filename: str, settings: GenerationSettings, profile: UserProfile | None = None, deck_mode: str = "Reading Group", parsed_instruction: ParsedInstructionSpec | None = None) -> JobStatus:
         job_id = f"job_{uuid4().hex[:12]}"
         deck_id = job_id
         paper_id = job_id
         active_profile = profile or build_inline_profile("Inline Profile", settings)
+        if settings.long_instruction and parsed_instruction is None:
+            parsed_instruction = self.instruction_parser.run(LongInstructionInput(raw_text=settings.long_instruction))
+        merge_report = PromptMergeReport()
+        if parsed_instruction:
+            settings, merge_report = merge_profile_with_instruction(active_profile, settings, parsed_instruction, deck_mode)
         status = JobStatus(job_id=job_id, status="processing", paper_id=paper_id, deck_id=deck_id, message="Starting pipeline", profile_id=active_profile.id)
         self.storage.save_job_status(status)
         self.storage.touch_job_stage(job_id, "Uploading", "Saving uploaded PDF", active_profile.id)
+        if settings.long_instruction:
+            self.storage.save_text_artifact(job_id, "user_instruction_raw.md", settings.long_instruction)
+        if parsed_instruction:
+            self.storage.save_json_artifact(job_id, "user_instruction_spec.json", parsed_instruction.model_dump())
+            self.storage.save_json_artifact(job_id, "prompt_merge_report.json", merge_report.model_dump())
+        self.storage.save_json_artifact(job_id, "merged_generation_config.json", settings.model_dump())
 
         pdf_path = self.storage.save_bytes(job_id, "original.pdf", pdf_bytes)
 
@@ -54,7 +72,8 @@ class PaperToPPTPipeline:
         parsed_paper = self.parser.parse(pdf_path, paper_id=paper_id)
         self.storage.save_json_artifact(job_id, "parsed_paper.json", parsed_paper.model_dump())
 
-        llm = create_llm_provider(parsed_paper)
+        runtime_config = self.config_storage.load_model_config()
+        llm = create_llm_provider(parsed_paper, runtime_config=runtime_config)
         if isinstance(llm, MockLLMProvider):
             llm.bind_paper(parsed_paper)
 
@@ -62,6 +81,9 @@ class PaperToPPTPipeline:
         extracted_assets = self.asset_extractor.extract(pdf_path, parsed_paper, self.storage.get_job_dir(job_id))
         self.storage.save_json_artifact(job_id, "extracted_assets.json", extracted_assets.model_dump())
 
+        if settings.long_instruction:
+            self.storage.touch_job_stage(job_id, "Parsing long instruction", "Parsing long-form user requirement", active_profile.id)
+            self.storage.touch_job_stage(job_id, "Merging profile and instruction", "Applying instruction overrides safely", active_profile.id)
         self.storage.touch_job_stage(job_id, "Summarizing paper", "Creating grounded paper summary", active_profile.id)
         summary = PaperSummaryAgent(llm).run(parsed_paper)
         self.storage.save_json_artifact(job_id, "paper_summary.json", summary.model_dump())
@@ -118,16 +140,21 @@ class PaperToPPTPipeline:
         status.artifacts = self.storage.list_artifacts(job_id)
         return status
 
-    def regenerate_slides(self, deck_id: str, slide_ids: list[str], instruction: str, profile: UserProfile | None = None) -> JobStatus:
+    def regenerate_slides(self, deck_id: str, slide_ids: list[str], instruction: str, profile: UserProfile | None = None, long_instruction: str = "") -> JobStatus:
         parsed_paper = self.storage.load_json_artifact(deck_id, "parsed_paper.json")
         extracted_assets = self.storage.load_json_artifact(deck_id, "extracted_assets.json")
         paper_summary = self.storage.load_json_artifact(deck_id, "paper_summary.json")
         deck_plan = self.storage.load_json_artifact(deck_id, "deck_plan.json")
         slide_drafts = self.storage.load_json_artifact(deck_id, "slide_drafts.json")
+        merged_generation_config = self.storage.load_json_artifact(deck_id, "merged_generation_config.json")
         current_status = self.storage.load_job_status(deck_id)
         active_profile = profile or self._resolve_profile(current_status.profile_id) or build_inline_profile("Inline Profile", GenerationSettings())
+        if long_instruction:
+            parsed_spec = self.instruction_parser.run(LongInstructionInput(raw_text=long_instruction))
+            self.storage.save_text_artifact(deck_id, "user_instruction_raw.md", long_instruction)
+            self.storage.save_json_artifact(deck_id, "user_instruction_spec.json", parsed_spec.model_dump())
 
-        llm = create_llm_provider()
+        llm = create_llm_provider(runtime_config=self.config_storage.load_model_config())
         drafts_model = RegenerateSlideAgent(SlideWriterAgent(llm)).run(
             ParsedPaper(**parsed_paper),
             PaperSummary(**paper_summary),
@@ -144,7 +171,7 @@ class PaperToPPTPipeline:
         critic_report = self.critic.run(drafts_model, grounding_report, active_profile)
         self.storage.save_json_artifact(deck_id, "critic_report.json", critic_report.model_dump())
         output_path = self.storage.get_artifact_path(deck_id, "final_deck.pptx")
-        self.ppt_builder.build(output_path, PaperSummary(**paper_summary), DeckPlan(**deck_plan), drafts_model, profile_to_settings(active_profile))
+        self.ppt_builder.build(output_path, PaperSummary(**paper_summary), DeckPlan(**deck_plan), drafts_model, GenerationSettings(**merged_generation_config))
         current_status.artifacts = self.storage.list_artifacts(deck_id)
         current_status.message = f"Regenerated slides: {', '.join(slide_ids)}"
         current_status.critic_approved = critic_report.approved

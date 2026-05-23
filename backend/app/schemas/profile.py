@@ -22,6 +22,7 @@ class UserProfile(BaseModel):
     title_font: str = "Aptos Display"
     body_font: str = "Aptos"
     custom_instructions: str = ""
+    long_generation_instruction: str = ""
 
 
 class CreateProfileRequest(BaseModel):
@@ -42,3 +43,4 @@ class CreateProfileRequest(BaseModel):
     title_font: str = "Aptos Display"
     body_font: str = "Aptos"
     custom_instructions: str = ""
+    long_generation_instruction: str = ""

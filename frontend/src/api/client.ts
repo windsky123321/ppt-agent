@@ -1,13 +1,41 @@
-import type { ArtifactResponse, GenerationSettings, UploadResponse, UserProfile } from "../types";
+import type {
+  ArtifactResponse,
+  GenerationSettings,
+  HealthStatus,
+  ParsedInstructionSpec,
+  PromptTemplate,
+  RuntimeModelConfig,
+  RuntimeModelConfigView,
+  UploadResponse,
+  UserProfile,
+} from "../types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
-export async function uploadPaper(file: File, settings: GenerationSettings, profileId?: string): Promise<UploadResponse> {
+async function parseJsonOrThrow(response: Response, fallbackMessage: string) {
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail ?? fallbackMessage);
+  }
+  return response.json();
+}
+
+export async function fetchHealth(): Promise<HealthStatus> {
+  const response = await fetch(`${API_BASE}/api/health`);
+  return parseJsonOrThrow(response, "后端健康检查失败。");
+}
+
+export async function uploadPaper(
+  file: File,
+  settings: GenerationSettings,
+  profileId?: string,
+  deckMode = "Reading Group",
+): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  if (profileId) {
-    formData.append("profile_id", profileId);
-  }
+  if (profileId) formData.append("profile_id", profileId);
+  formData.append("deck_mode", deckMode);
+  formData.append("long_instruction", settings.long_instruction);
   formData.append("language", settings.language);
   formData.append("audience", settings.audience);
   formData.append("slide_count", String(settings.slide_count));
@@ -15,17 +43,8 @@ export async function uploadPaper(file: File, settings: GenerationSettings, prof
   formData.append("include_source_footers", String(settings.include_source_footers));
   formData.append("theme", settings.theme);
 
-  const response = await fetch(`${API_BASE}/api/papers/upload`, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail ?? "Upload failed.");
-  }
-
-  return response.json();
+  const response = await fetch(`${API_BASE}/api/papers/upload`, { method: "POST", body: formData });
+  return parseJsonOrThrow(response, "PDF 上传失败。");
 }
 
 export function makeDownloadUrl(deckId: string): string {
@@ -34,10 +53,7 @@ export function makeDownloadUrl(deckId: string): string {
 
 export async function fetchProfiles(): Promise<UserProfile[]> {
   const response = await fetch(`${API_BASE}/api/profiles`);
-  if (!response.ok) {
-    throw new Error("Failed to load profiles.");
-  }
-  const payload = await response.json();
+  const payload = await parseJsonOrThrow(response, "读取配置档失败。");
   return payload.profiles;
 }
 
@@ -47,37 +63,77 @@ export async function saveProfile(profile: Omit<UserProfile, "id">, profileId?: 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(profile),
   });
-  if (!response.ok) {
-    throw new Error("Failed to save profile.");
-  }
-  return response.json();
+  return parseJsonOrThrow(response, "保存配置档失败。");
 }
 
 export async function fetchArtifacts(deckId: string): Promise<ArtifactResponse> {
   const response = await fetch(`${API_BASE}/api/decks/${deckId}/artifacts`);
-  if (!response.ok) {
-    throw new Error("Failed to load artifacts.");
-  }
-  return response.json();
+  return parseJsonOrThrow(response, "读取产物列表失败。");
 }
 
 export async function fetchJsonArtifact<T>(deckId: string, artifactName: string): Promise<T> {
   const response = await fetch(`${API_BASE}/api/decks/${deckId}/artifacts/${artifactName}`);
-  if (!response.ok) {
-    throw new Error(`Failed to load ${artifactName}.`);
-  }
-  return response.json();
+  return parseJsonOrThrow(response, `读取 ${artifactName} 失败。`);
 }
 
-export async function regenerateSlides(deckId: string, slideIds: string[], instruction: string, profileId?: string) {
+export async function regenerateSlides(
+  deckId: string,
+  slideIds: string[],
+  instruction: string,
+  profileId?: string,
+  longInstruction = "",
+) {
   const response = await fetch(`${API_BASE}/api/decks/${deckId}/regenerate-slide`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slide_ids: slideIds, instruction, profile_id: profileId }),
+    body: JSON.stringify({ slide_ids: slideIds, instruction, profile_id: profileId, long_instruction: longInstruction }),
   });
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail ?? "Failed to regenerate slide.");
-  }
-  return response.json();
+  return parseJsonOrThrow(response, "单页重生成失败。");
+}
+
+export async function getModelConfig(): Promise<RuntimeModelConfigView> {
+  const response = await fetch(`${API_BASE}/api/config/model`);
+  return parseJsonOrThrow(response, "后端模型配置读取失败。");
+}
+
+export async function saveModelConfig(config: RuntimeModelConfig): Promise<RuntimeModelConfigView> {
+  const response = await fetch(`${API_BASE}/api/config/model`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config),
+  });
+  return parseJsonOrThrow(response, "模型配置保存失败。");
+}
+
+export async function testModelConfig(config: RuntimeModelConfig) {
+  const response = await fetch(`${API_BASE}/api/config/model/test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config),
+  });
+  return parseJsonOrThrow(response, "模型连接测试失败。");
+}
+
+export async function parseInstruction(rawText: string, languageHint: string): Promise<ParsedInstructionSpec> {
+  const response = await fetch(`${API_BASE}/api/instructions/parse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ raw_text: rawText, language_hint: languageHint, save_as_preset: false }),
+  });
+  return parseJsonOrThrow(response, "需求解析失败。");
+}
+
+export async function fetchPromptTemplates(): Promise<PromptTemplate[]> {
+  const response = await fetch(`${API_BASE}/api/prompt-templates`);
+  const payload = await parseJsonOrThrow(response, "提示词模板读取失败。");
+  return payload.templates;
+}
+
+export async function savePromptTemplate(template: PromptTemplate): Promise<PromptTemplate> {
+  const response = await fetch(`${API_BASE}/api/prompt-templates`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(template),
+  });
+  return parseJsonOrThrow(response, "提示词模板保存失败。");
 }

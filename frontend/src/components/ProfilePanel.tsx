@@ -13,9 +13,9 @@ export function ProfilePanel({ profiles, activeProfileId, editingProfile, onSele
   return (
     <section className="rounded-3xl bg-white/85 p-6 shadow-card backdrop-blur">
       <h2 className="text-xl font-semibold text-ink">Profile</h2>
-      <p className="mt-2 text-sm text-slate-600">Select a persistent presentation profile or edit the active one inline.</p>
+      <p className="mt-2 text-sm text-slate-600">选择一个持久化配置档，或直接在当前页面内修改它。</p>
       <label className="mt-4 block text-sm text-slate-700">
-        Active Profile
+        当前配置档
         <select className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2" value={activeProfileId} onChange={(event) => onSelect(event.target.value)}>
           <option value="">No saved profile</option>
           {profiles.map((profile) => (
@@ -53,6 +53,10 @@ export function ProfilePanel({ profiles, activeProfileId, editingProfile, onSele
           <label className="text-sm text-slate-700 md:col-span-2">
             Custom Instructions
             <textarea className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 px-3 py-2" value={editingProfile.custom_instructions} onChange={(event) => onEditChange({ ...editingProfile, custom_instructions: event.target.value })} />
+          </label>
+          <label className="text-sm text-slate-700 md:col-span-2">
+            Long Generation Instruction
+            <textarea className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 px-3 py-2" value={editingProfile.long_generation_instruction} onChange={(event) => onEditChange({ ...editingProfile, long_generation_instruction: event.target.value })} />
           </label>
         </div>
       ) : null}

@@ -1,39 +1,63 @@
-import type { JobStatus } from "../types";
+import type { HealthStatus, JobStatus } from "../types";
 
 type Props = {
   loading: boolean;
   error: string;
   job: JobStatus | null;
+  health: HealthStatus | null;
+  backendConnected: boolean;
+  modelStatus: string;
+  profileName: string;
+  deckMode: string;
+  hasLongInstruction: boolean;
   onGenerate: () => void;
   disabled: boolean;
 };
 
-export function StatusPanel({ loading, error, job, onGenerate, disabled }: Props) {
+export function StatusPanel({
+  loading,
+  error,
+  job,
+  health,
+  backendConnected,
+  modelStatus,
+  profileName,
+  deckMode,
+  hasLongInstruction,
+  onGenerate,
+  disabled,
+}: Props) {
   return (
     <section className="rounded-3xl bg-ink p-6 text-white shadow-card">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Progress</h2>
+          <h2 className="text-xl font-semibold">运行状态</h2>
           <p className="mt-2 text-sm text-slate-300">
-            {loading ? `Running stage: ${job?.current_stage ?? "starting"}.` : job?.message ?? "Ready to generate an editable PPTX deck."}
+            {loading ? `当前阶段：${job?.current_stage ?? "starting"}` : job?.message ?? "准备生成可编辑 PPTX。"}
           </p>
         </div>
-        <button
-          className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-          onClick={onGenerate}
-          disabled={disabled}
-        >
-          {loading ? "Generating..." : "Generate Deck"}
+        <button className="rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50" onClick={onGenerate} disabled={disabled}>
+          {loading ? "生成中..." : "开始生成 PPT"}
         </button>
       </div>
-      {job && (
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <Stat label="Job ID" value={job.job_id} />
-          <Stat label="Status" value={job.status} />
-          <Stat label="Deck ID" value={job.deck_id} />
-          <Stat label="Stage" value={job.current_stage ?? "ready"} />
-        </div>
-      )}
+
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <Stat label="后端连接" value={backendConnected ? "已连接" : "未连接"} />
+        <Stat label="模型状态" value={modelStatus || (health?.llm_configured ? "已配置" : "建议先配置或使用 Mock")} />
+        <Stat label="当前配置档" value={profileName || "未选择"} />
+        <Stat label="Deck 模式" value={deckMode} />
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <Stat label="Job ID" value={job?.job_id ?? "-"} />
+        <Stat label="状态" value={job?.status ?? "idle"} />
+        <Stat label="Stage" value={job?.current_stage ?? "ready"} />
+        <Stat label="长需求" value={hasLongInstruction ? "已提供" : "未提供"} />
+      </div>
+
+      {!backendConnected ? (
+        <p className="mt-4 rounded-2xl bg-red-500/20 px-4 py-3 text-sm text-red-100">后端服务未连接，请检查 start_windows.bat 是否正在运行。</p>
+      ) : null}
       {error ? <p className="mt-4 rounded-2xl bg-red-500/20 px-4 py-3 text-sm text-red-100">{error}</p> : null}
     </section>
   );

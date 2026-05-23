@@ -117,4 +117,5 @@ def build_inline_profile(name: str, settings: GenerationSettings) -> UserProfile
         title_font="Aptos Display",
         body_font="Aptos",
         custom_instructions="",
+        long_generation_instruction="",
     )

@@ -12,6 +12,16 @@ export type GenerationSettings = {
   include_discussion_questions: boolean;
   talk_duration_minutes: number;
   visual_density: string;
+  long_instruction: string;
+};
+
+export type HealthStatus = {
+  status: string;
+  backend: string;
+  version: string;
+  storage_dir: string;
+  llm_configured: boolean;
+  vision_configured: boolean;
 };
 
 export type UserProfile = {
@@ -33,6 +43,7 @@ export type UserProfile = {
   title_font: string;
   body_font: string;
   custom_instructions: string;
+  long_generation_instruction: string;
 };
 
 export type ArtifactItem = {
@@ -104,4 +115,85 @@ export type ArtifactResponse = {
   deck_status: string;
   grounding_status?: number | null;
   critic_approval_status?: boolean | null;
+};
+
+export type RuntimeModelConfigView = {
+  llm_provider: string;
+  llm_base_url: string;
+  llm_api_key_masked: string;
+  llm_model: string;
+  fallback_llm_model: string;
+  vision_provider: string;
+  vision_base_url: string;
+  vision_api_key_masked: string;
+  vision_model: string;
+  enable_vision: boolean;
+  enable_critic: boolean;
+  enable_repair: boolean;
+  max_repair_loops: number;
+  reasoning_effort: string;
+  verbosity: string;
+  temperature: number;
+  patch_mode: boolean;
+  revision_max_output_tokens: number;
+  normal_max_output_tokens: number;
+  output_dir: string;
+};
+
+export type RuntimeModelConfig = {
+  llm_provider: string;
+  llm_base_url: string;
+  llm_api_key: string;
+  llm_model: string;
+  fallback_llm_model: string;
+  vision_provider: string;
+  vision_base_url: string;
+  vision_api_key: string;
+  vision_model: string;
+  enable_vision: boolean;
+  enable_critic: boolean;
+  enable_repair: boolean;
+  max_repair_loops: number;
+  reasoning_effort: string;
+  verbosity: string;
+  temperature: number;
+  patch_mode: boolean;
+  revision_max_output_tokens: number;
+  normal_max_output_tokens: number;
+  output_dir: string;
+};
+
+export type ParsedInstructionSpec = {
+  detected_language: string;
+  audience?: string | null;
+  presentation_goal?: string | null;
+  preferred_language?: string | null;
+  tone?: string | null;
+  slide_count_target?: number | null;
+  talk_duration_minutes?: number | null;
+  math_level?: string | null;
+  include_speaker_notes?: boolean | null;
+  include_limitations?: boolean | null;
+  include_discussion_questions?: boolean | null;
+  include_source_footers?: boolean | null;
+  visual_preference?: string | null;
+  sections_to_emphasize: string[];
+  sections_to_reduce: string[];
+  must_include: string[];
+  avoid: string[];
+  style_requirements: string[];
+  special_requests: string[];
+  unclear_requirements: string[];
+  conflict_warnings: string[];
+  compressed_summary: string;
+};
+
+export type PromptTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  language: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
 };

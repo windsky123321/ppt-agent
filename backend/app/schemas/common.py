@@ -25,6 +25,7 @@ class GenerationSettings(BaseModel):
     include_discussion_questions: bool = True
     talk_duration_minutes: int = Field(default=12, ge=3, le=120)
     visual_density: str = "balanced"
+    long_instruction: str = ""
 
 
 class SourceRef(BaseModel):
