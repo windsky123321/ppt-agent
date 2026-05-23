@@ -3,6 +3,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE_DIR = ROOT / "release"
@@ -46,7 +51,7 @@ def main() -> int:
             print(f"发布目录中不应包含：{path.relative_to(ROOT)}")
             return 1
 
-    print("Windows 发布目录检查通过。")
+    print("Release check passed")
     return 0
 
 

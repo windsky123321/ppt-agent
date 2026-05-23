@@ -153,6 +153,7 @@ def test_build_release_script_smoke_strings():
 def test_github_actions_workflow_exists_and_is_windows():
     workflow_text = (ROOT / ".github" / "workflows" / "build-windows-exe.yml").read_text(encoding="utf-8")
     assert "name: Build Windows EXE" in workflow_text
+    assert "PYTHONIOENCODING: utf-8" in workflow_text
     assert "windows-latest" in workflow_text
     assert "python -m pip install --upgrade pip" in workflow_text
     assert "python -m pip install pyinstaller" in workflow_text
@@ -167,6 +168,8 @@ def test_github_actions_workflow_exists_and_is_windows():
 
 def test_release_check_script_exists_and_validates_expected_files():
     script_text = (ROOT / "scripts" / "check_windows_release.py").read_text(encoding="utf-8")
+    assert 'sys.stdout.reconfigure(encoding="utf-8", errors="replace")' in script_text
+    assert 'sys.stderr.reconfigure(encoding="utf-8", errors="replace")' in script_text
     assert "PPT-Agent.exe" in script_text
     assert "README.md" in script_text
     assert "WINDOWS_QUICKSTART.md" in script_text
@@ -181,6 +184,7 @@ def test_release_check_script_exists_and_validates_expected_files():
     assert "outputs" in script_text
     assert "temp" in script_text
     assert "uploads" in script_text
+    assert "Release check passed" in script_text
 
 
 def test_ci_build_script_exists_and_uses_python_module_pyinstaller():
