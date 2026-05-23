@@ -1,0 +1,21 @@
+{
+  "id": "profile_ba1bae566e",
+  "name": "Round2 Profile",
+  "audience": "graduate",
+  "presentation_goal": "summarize",
+  "preferred_language": "en",
+  "tone": "academic",
+  "slide_count_target": 12,
+  "talk_duration_minutes": 12,
+  "math_level": "balanced",
+  "include_speaker_notes": true,
+  "include_limitations": true,
+  "include_discussion_questions": true,
+  "include_source_footers": true,
+  "theme_id": "academic_clean",
+  "brand_colors": [],
+  "title_font": "Aptos Display",
+  "body_font": "Aptos",
+  "custom_instructions": "",
+  "long_generation_instruction": ""
+}

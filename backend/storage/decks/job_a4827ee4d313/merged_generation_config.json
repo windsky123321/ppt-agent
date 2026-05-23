@@ -1,0 +1,16 @@
+{
+  "language": "en",
+  "audience": "graduate",
+  "slide_count": 10,
+  "include_speaker_notes": true,
+  "include_source_footers": true,
+  "theme": "academic_clean",
+  "presentation_goal": "summarize",
+  "tone": "academic",
+  "math_level": "balanced",
+  "include_limitations": true,
+  "include_discussion_questions": true,
+  "talk_duration_minutes": 12,
+  "visual_density": "balanced",
+  "long_instruction": ""
+}

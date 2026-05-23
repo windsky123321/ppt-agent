@@ -1,0 +1,15 @@
+{
+  "applied_overrides": [
+    "slide_count_target",
+    "tone",
+    "math_level",
+    "include_speaker_notes",
+    "include_limitations",
+    "include_discussion_questions"
+  ],
+  "conflict_warnings": [
+    "Long instruction math level overrides profile/default math level: balanced -> simplified"
+  ],
+  "compressed_instruction": false,
+  "instruction_length": 173
+}

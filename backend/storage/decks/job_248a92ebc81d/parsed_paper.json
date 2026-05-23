@@ -1,0 +1,57 @@
+{
+  "paper_id": "job_248a92ebc81d",
+  "title": "Sample Research Paper",
+  "authors": [
+    "Alice Smith, Bob Lee"
+  ],
+  "abstract": "This paper studies a simple benchmark for automatic presentation generation.",
+  "sections": [
+    {
+      "title": "Abstract",
+      "text": "This paper studies a simple benchmark for automatic presentation generation.",
+      "page_start": 1,
+      "page_end": 1
+    },
+    {
+      "title": "Introduction",
+      "text": "This work focuses on reliable local-first paper to PPT generation.",
+      "page_start": 1,
+      "page_end": 1
+    },
+    {
+      "title": "Method",
+      "text": "We parse PDFs, summarize content, plan slides, and build editable PPTX files.",
+      "page_start": 1,
+      "page_end": 1
+    },
+    {
+      "title": "Experiments",
+      "text": "We evaluate the pipeline with mock LLM outputs and local artifacts.",
+      "page_start": 1,
+      "page_end": 1
+    },
+    {
+      "title": "Results",
+      "text": "The system produces editable slides and intermediate JSON artifacts.",
+      "page_start": 1,
+      "page_end": 1
+    },
+    {
+      "title": "References",
+      "text": "[1] Demo Reference",
+      "page_start": 1,
+      "page_end": 1
+    }
+  ],
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "Sample Research Paper\nAlice Smith, Bob Lee\nAbstract This paper studies a simple benchmark for automatic presentation generation.\n1 Introduction\nThis work focuses on reliable local-first paper to PPT generation.\n2 Method\nWe parse PDFs, summarize content, plan slides, and build editable PPTX files.\n3 Experiments\nWe evaluate the pipeline with mock LLM outputs and local artifacts.\n4 Results\nThe system produces editable slides and intermediate JSON artifacts.\nReferences\n[1] Demo Reference"
+    }
+  ],
+  "figures": [],
+  "tables": [],
+  "references": [
+    "Demo Reference"
+  ]
+}

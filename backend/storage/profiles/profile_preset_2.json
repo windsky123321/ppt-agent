@@ -1,0 +1,24 @@
+{
+  "id": "profile_preset_2",
+  "name": "English Expert Conference Talk",
+  "audience": "expert",
+  "presentation_goal": "persuade",
+  "preferred_language": "en",
+  "tone": "technical",
+  "slide_count_target": 12,
+  "talk_duration_minutes": 15,
+  "math_level": "detailed",
+  "include_speaker_notes": true,
+  "include_limitations": true,
+  "include_discussion_questions": false,
+  "include_source_footers": true,
+  "theme_id": "dark_modern",
+  "brand_colors": [
+    "#0f172a",
+    "#38bdf8"
+  ],
+  "title_font": "Aptos Display",
+  "body_font": "Aptos",
+  "custom_instructions": "",
+  "long_generation_instruction": ""
+}

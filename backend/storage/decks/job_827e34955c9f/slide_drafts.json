@@ -1,0 +1,354 @@
+{
+  "slides": [
+    {
+      "slide_id": "slide_01",
+      "slide_type": "title",
+      "title": "Sample Research Paper",
+      "subtitle": "Alice Smith, Bob Lee",
+      "purpose": "Introduce the paper, authors, and context.",
+      "key_message": "This paper studies a simple benchmark for automatic presentation generation",
+      "bullets": [],
+      "visual_elements": [],
+      "speaker_notes": "Introduce the paper title, authors, and the core topic: This paper studies a simple benchmark for automatic presentation generation",
+      "source_refs": [],
+      "confidence": 0.95,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_02",
+      "slide_type": "takeaway",
+      "title": "One-Slide...（中文）",
+      "subtitle": "",
+      "purpose": "State the main idea and outcome in one slide.",
+      "key_message": "This paper studies a simple benchmark for automatic presentation generation",
+      "bullets": [
+        "This work focus...",
+        "We parse PDFs,...",
+        "The system prod..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'One-Slide...（中文）' by leading with: This paper studies a simple benchmark for automatic presentation generation. Then walk through: This work focus... We parse PDFs,... The system prod.... Cite Abstract while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Abstract",
+          "figure_or_table_id": null,
+          "evidence_summary": "This paper studies a simple benchmark for automatic presentation generation."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_03",
+      "slide_type": "divider",
+      "title": "Problem S...",
+      "subtitle": "From motivation to technical content",
+      "purpose": "Transition into the paper motivation and problem framing.",
+      "key_message": "This section shifts from context into the main technical argument.",
+      "bullets": [],
+      "visual_elements": [],
+      "speaker_notes": "Use this slide as a transition before going deeper into the problem and method.",
+      "source_refs": [],
+      "confidence": 0.9,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_04",
+      "slide_type": "background",
+      "title": "Backgroun...（中文）",
+      "subtitle": "",
+      "purpose": "Explain why the problem matters.",
+      "key_message": "This work focuses on reliable local-first paper to PPT generation",
+      "bullets": [
+        "This work focus..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Backgroun...（中文）' by leading with: This work focuses on reliable local-first paper to PPT generation. Then walk through: This work focus.... Cite Introduction while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Introduction",
+          "figure_or_table_id": null,
+          "evidence_summary": "This work focuses on reliable local-first paper to PPT generation."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_05",
+      "slide_type": "problem",
+      "title": "Research...（中文）",
+      "subtitle": "",
+      "purpose": "Define the specific problem tackled by the paper.",
+      "key_message": "This work focuses on reliable local-first paper to PPT generation",
+      "bullets": [
+        "This work focus...",
+        "Research gap is...",
+        "Clarify the exa..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Research...（中文）' by leading with: This work focuses on reliable local-first paper to PPT generation. Then walk through: This work focus... Research gap is... Clarify the exa.... Cite Introduction while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Introduction",
+          "figure_or_table_id": null,
+          "evidence_summary": "This work focuses on reliable local-first paper to PPT generation."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_06",
+      "slide_type": "contributions",
+      "title": "Key Contr...（中文）",
+      "subtitle": "",
+      "purpose": "Summarize the main contributions.",
+      "key_message": "The paper makes several concrete contributions.",
+      "bullets": [
+        "We parse PDFs,...",
+        "The system prod..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Key Contr...（中文）' by leading with: The paper makes several concrete contributions.. Then walk through: We parse PDFs,... The system prod.... Cite Method while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Method",
+          "figure_or_table_id": null,
+          "evidence_summary": "We parse PDFs, summarize content, plan slides, and build editable PPTX files."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_07",
+      "slide_type": "method",
+      "title": "Method Ov...（中文）",
+      "subtitle": "",
+      "purpose": "Present the method at a high level.",
+      "key_message": "We parse PDFs, summarize content, plan slides, and build editable PPTX files",
+      "bullets": [
+        "We parse PDFs,..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Method Ov...（中文）' by leading with: We parse PDFs, summarize content, plan slides, and build editable PPTX files. Then walk through: We parse PDFs,.... Cite Method while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Method",
+          "figure_or_table_id": null,
+          "evidence_summary": "We parse PDFs, summarize content, plan slides, and build editable PPTX files."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_08",
+      "slide_type": "technical",
+      "title": "Technical...（中文）",
+      "subtitle": "",
+      "purpose": "Cover the technical design choices.",
+      "key_message": "We parse PDFs, summarize content, plan slides, and build editable PPTX files",
+      "bullets": [
+        "We parse PDFs,..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Technical...（中文）' by leading with: We parse PDFs, summarize content, plan slides, and build editable PPTX files. Then walk through: We parse PDFs,.... Cite Method while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Method",
+          "figure_or_table_id": null,
+          "evidence_summary": "We parse PDFs, summarize content, plan slides, and build editable PPTX files."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_09",
+      "slide_type": "experiments",
+      "title": "Experimen...（中文）",
+      "subtitle": "",
+      "purpose": "Describe evaluation setup, datasets, and metrics.",
+      "key_message": "We evaluate the pipeline with mock LLM outputs and local artifacts",
+      "bullets": [
+        "We evaluate the..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Experimen...（中文）' by leading with: We evaluate the pipeline with mock LLM outputs and local artifacts. Then walk through: We evaluate the.... Cite Experiments while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Experiments",
+          "figure_or_table_id": null,
+          "evidence_summary": "We evaluate the pipeline with mock LLM outputs and local artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_10",
+      "slide_type": "results",
+      "title": "Main Results（中文）",
+      "subtitle": "",
+      "purpose": "Present the main result evidence from the paper.",
+      "key_message": "The main results should be read directly from the paper evidence.",
+      "bullets": [
+        "The system prod..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Main Results（中文）' by leading with: The main results should be read directly from the paper evidence.. Then walk through: The system prod.... Cite Results while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Results",
+          "figure_or_table_id": null,
+          "evidence_summary": "The system produces editable slides and intermediate JSON artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_11",
+      "slide_type": "analysis",
+      "title": "Analysis...（中文）",
+      "subtitle": "",
+      "purpose": "Discuss deeper analysis if available.",
+      "key_message": "Deeper analysis is only included when the paper exposes it.",
+      "bullets": [
+        "The system prod..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Analysis...（中文）' by leading with: Deeper analysis is only included when the paper exposes it.. Then walk through: The system prod.... Cite Results while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Results",
+          "figure_or_table_id": null,
+          "evidence_summary": "The system produces editable slides and intermediate JSON artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_12",
+      "slide_type": "strengths",
+      "title": "Strengths（中文）",
+      "subtitle": "",
+      "purpose": "Highlight why the work is compelling.",
+      "key_message": "The strengths reflect what the parsed paper supports directly.",
+      "bullets": [
+        "The paper provi...",
+        "The paper inclu...",
+        "The paper repor..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Strengths（中文）' by leading with: The strengths reflect what the parsed paper supports directly.. Then walk through: The paper provi... The paper inclu... The paper repor.... Cite Results while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Results",
+          "figure_or_table_id": null,
+          "evidence_summary": "The system produces editable slides and intermediate JSON artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_13",
+      "slide_type": "limitations",
+      "title": "Limitations（中文）",
+      "subtitle": "",
+      "purpose": "Be explicit about weaknesses and open risks.",
+      "key_message": "Limitations are stated conservatively and marked uncertain when weakly grounded.",
+      "bullets": [
+        "The system prod..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Limitations（中文）' by leading with: Limitations are stated conservatively and marked uncertain when weakly grounded.. Then walk through: The system prod.... Cite Results while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Results",
+          "figure_or_table_id": null,
+          "evidence_summary": "The system produces editable slides and intermediate JSON artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_14",
+      "slide_type": "discussion",
+      "title": "Discussio...（中文）",
+      "subtitle": "",
+      "purpose": "Frame useful reading-group discussion points.",
+      "key_message": "Use these questions to drive group discussion.",
+      "bullets": [
+        "Does the propos...",
+        "Which reported...",
+        "Which limitatio..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Discussio...（中文）' by leading with: Use these questions to drive group discussion.. Then walk through: Does the propos... Which reported... Which limitatio.... Cite Results while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Results",
+          "figure_or_table_id": null,
+          "evidence_summary": "The system produces editable slides and intermediate JSON artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_15",
+      "slide_type": "conclusion",
+      "title": "Conclusion（中文）",
+      "subtitle": "",
+      "purpose": "Close with the final assessment and takeaway.",
+      "key_message": "The system produces editable slides and intermediate JSON artifacts",
+      "bullets": [
+        "The system prod...",
+        "Revisit the mai..."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Conclusion（中文）' by leading with: The system produces editable slides and intermediate JSON artifacts. Then walk through: The system prod... Revisit the mai.... Cite Results while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Results",
+          "figure_or_table_id": null,
+          "evidence_summary": "The system produces editable slides and intermediate JSON artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    }
+  ]
+}

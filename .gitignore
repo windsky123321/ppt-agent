@@ -15,7 +15,11 @@ outputs/
 temp/
 uploads/
 *.log
-storage/
+__pycache__/
+*.py[cod]
+/storage/
+!backend/app/storage/
+!backend/app/storage/**
 *.pptx
 *.pdf
 *.exe

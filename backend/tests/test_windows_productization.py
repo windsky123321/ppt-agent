@@ -62,6 +62,19 @@ def test_windows_product_files_exist():
         assert (ROOT / relative).exists(), relative
 
 
+def test_gitignore_does_not_ignore_backend_app_storage():
+    gitignore_text = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    assert "/storage/" in gitignore_text
+    assert "!backend/app/storage/" in gitignore_text
+    assert "!backend/app/storage/**" in gitignore_text
+
+
+def test_backend_app_storage_package_exists():
+    assert (ROOT / "backend" / "app" / "storage").exists()
+    assert (ROOT / "backend" / "app" / "storage" / "__init__.py").exists()
+    assert (ROOT / "backend" / "app" / "storage" / "config_storage.py").exists()
+
+
 def test_model_config_output_dir_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setenv("STORAGE_DIR", str(tmp_path / "storage"))
     storage = ConfigStorage()
@@ -74,6 +87,8 @@ def test_model_config_output_dir_roundtrip(tmp_path, monkeypatch):
 def test_preflight_missing_pyinstaller_message():
     module = load_module("preflight_windows_missing_pyinstaller", "packaging/preflight_windows.py")
     module._pyinstaller_available = lambda _python_exe: False
+    module.py_compile.compile = lambda *_args, **_kwargs: None
+    module._release_dir_writable = lambda _: True
     ok, messages = module.run_preflight(auto_install=False)
     assert ok is False
     assert any("PyInstaller" in message for message in messages)
@@ -116,6 +131,7 @@ def test_launcher_spec_validation():
     assert "pathex=[str(project_root), str(backend_root)]" in spec_text
     assert 'project_root / "frontend" / "dist"' in spec_text
     assert 'project_root / "backend" / "app"' in spec_text
+    assert 'project_root / "backend" / "app" / "storage"' in spec_text
     assert '.env.example' in spec_text
     assert 'collect_submodules("app")' in spec_text
     assert '"app.storage"' in spec_text
@@ -129,7 +145,11 @@ def test_launcher_spec_validation():
 
 
 def test_launcher_python_compiles():
-    py_compile.compile(str(ROOT / "desktop" / "launcher.py"), doraise=True)
+    py_compile.compile(
+        str(ROOT / "desktop" / "launcher.py"),
+        cfile=str(ROOT / "backend" / "tests" / "launcher_test.pyc"),
+        doraise=True,
+    )
 
 
 def test_launcher_runtime_path_helpers():
@@ -137,7 +157,12 @@ def test_launcher_runtime_path_helpers():
     assert "BACKEND_ROOT = APP_ROOT / \"backend\"" in launcher_text
     assert "FRONTEND_DIST = APP_ROOT / \"frontend\" / \"dist\"" in launcher_text
     assert "env[\"PYTHONPATH\"] = backend_path" in launcher_text
+    assert "backend_root/app/storage exists" in launcher_text
+    assert "backend_root/app/storage/__init__.py exists" in launcher_text
+    assert "importlib.import_module(\"app\")" in launcher_text
     assert "importlib.import_module(\"app.storage\")" in launcher_text
+    assert "importlib.import_module(\"app.main\")" in launcher_text
+    assert "发布包缺少后端 storage 模块" in launcher_text
     assert "backend cwd=" in launcher_text
     assert "sys.path[:5]" in launcher_text
 
@@ -207,6 +232,10 @@ def test_ci_build_script_exists_and_uses_python_module_pyinstaller():
     assert "python -m PyInstaller --version" in script_text
     assert "python -m PyInstaller packaging/launcher.spec --noconfirm --clean" in script_text
     assert 'Test-Path -LiteralPath "desktop/launcher.py"' in script_text
+    assert 'Test-Path -LiteralPath "backend/app/storage"' in script_text
+    assert 'Test-Path -LiteralPath "backend/app/storage/__init__.py"' in script_text
+    assert "git ls-files backend/app/storage" in script_text
+    assert "backend/app/storage is missing before packaging" in script_text
     assert "release/PPT-Agent.exe" in script_text
     assert ".env.example" in script_text
     assert ".env" in script_text

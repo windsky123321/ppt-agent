@@ -1,0 +1,229 @@
+{
+  "slides": [
+    {
+      "slide_id": "slide_01",
+      "slide_type": "title",
+      "title": "Sample Research Paper",
+      "subtitle": "Alice Smith, Bob Lee",
+      "purpose": "Introduce the paper, authors, and context.",
+      "key_message": "This paper studies a simple benchmark for automatic presentation generation",
+      "bullets": [],
+      "visual_elements": [],
+      "speaker_notes": "Introduce the paper title, authors, and the core topic: This paper studies a simple benchmark for automatic presentation generation",
+      "source_refs": [],
+      "confidence": 0.95,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_02",
+      "slide_type": "takeaway",
+      "title": "One-Slide Takeaway",
+      "subtitle": "",
+      "purpose": "State the main idea and outcome in one slide.",
+      "key_message": "This paper studies a simple benchmark for automatic presentation generation",
+      "bullets": [
+        "This work focuses on reliable local-first paper to PPT generation",
+        "We parse PDFs, summarize content, plan slides, and build editable PPTX files",
+        "The system produces editable slides and intermediate JSON artifacts"
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'One-Slide Takeaway' by leading with: This paper studies a simple benchmark for automatic presentation generation. Then walk through: This work focuses on reliable local-first paper to PPT generation We parse PDFs, summarize content, plan slides, and build editable PPTX files The system produces editable slides and intermediate JSON artifacts. Cite Abstract while explaining what is directly supported versu...",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Abstract",
+          "figure_or_table_id": null,
+          "evidence_summary": "This paper studies a simple benchmark for automatic presentation generation."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_03",
+      "slide_type": "divider",
+      "title": "Problem Setting",
+      "subtitle": "From motivation to technical content",
+      "purpose": "Transition into the paper motivation and problem framing.",
+      "key_message": "This section shifts from context into the main technical argument.",
+      "bullets": [],
+      "visual_elements": [],
+      "speaker_notes": "Use this slide as a transition before going deeper into the problem and method.",
+      "source_refs": [],
+      "confidence": 0.9,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_04",
+      "slide_type": "background",
+      "title": "Background / Motivation",
+      "subtitle": "",
+      "purpose": "Explain why the problem matters.",
+      "key_message": "This work focuses on reliable local-first paper to PPT generation",
+      "bullets": [
+        "This work focuses on reliable local-first paper to PPT generation"
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Background / Motivation' by leading with: This work focuses on reliable local-first paper to PPT generation. Then walk through: This work focuses on reliable local-first paper to PPT generation. Cite Introduction while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Introduction",
+          "figure_or_table_id": null,
+          "evidence_summary": "This work focuses on reliable local-first paper to PPT generation."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_05",
+      "slide_type": "problem",
+      "title": "Research Problem",
+      "subtitle": "",
+      "purpose": "Define the specific problem tackled by the paper.",
+      "key_message": "This work focuses on reliable local-first paper to PPT generation",
+      "bullets": [
+        "This work focuses on reliable local-first paper to PPT generation",
+        "Research gap is uncertain from the parsed introduction and abstract.",
+        "Clarify the exact research task before method details."
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Research Problem' by leading with: This work focuses on reliable local-first paper to PPT generation. Then walk through: This work focuses on reliable local-first paper to PPT generation Research gap is uncertain from the parsed introduction and abstract. Clarify the exact research task before method details.. Cite Introduction while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Introduction",
+          "figure_or_table_id": null,
+          "evidence_summary": "This work focuses on reliable local-first paper to PPT generation."
+        }
+      ],
+      "confidence": 0.55,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_06",
+      "slide_type": "contributions",
+      "title": "Key Contributions",
+      "subtitle": "",
+      "purpose": "Summarize the main contributions.",
+      "key_message": "The paper makes several concrete contributions.",
+      "bullets": [
+        "We parse PDFs, summarize content, plan slides, and build editable PPTX files",
+        "The system produces editable slides and intermediate JSON artifacts"
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Key Contributions' by leading with: The paper makes several concrete contributions.. Then walk through: We parse PDFs, summarize content, plan slides, and build editable PPTX files The system produces editable slides and intermediate JSON artifacts. Cite Method while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Method",
+          "figure_or_table_id": null,
+          "evidence_summary": "We parse PDFs, summarize content, plan slides, and build editable PPTX files."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_07",
+      "slide_type": "method",
+      "title": "Method Overview",
+      "subtitle": "",
+      "purpose": "Present the method at a high level.",
+      "key_message": "We parse PDFs, summarize content, plan slides, and build editable PPTX files",
+      "bullets": [
+        "We parse PDFs, summarize content, plan slides, and build editable PPTX files"
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Method Overview' by leading with: We parse PDFs, summarize content, plan slides, and build editable PPTX files. Then walk through: We parse PDFs, summarize content, plan slides, and build editable PPTX files. Cite Method while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Method",
+          "figure_or_table_id": null,
+          "evidence_summary": "We parse PDFs, summarize content, plan slides, and build editable PPTX files."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_08",
+      "slide_type": "technical",
+      "title": "Technical Details / Architecture",
+      "subtitle": "",
+      "purpose": "Cover the technical design choices.",
+      "key_message": "We parse PDFs, summarize content, plan slides, and build editable PPTX files",
+      "bullets": [
+        "We parse PDFs, summarize content, plan slides, and build editable PPTX files"
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Technical Details / Architecture' by leading with: We parse PDFs, summarize content, plan slides, and build editable PPTX files. Then walk through: We parse PDFs, summarize content, plan slides, and build editable PPTX files. Cite Method while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Method",
+          "figure_or_table_id": null,
+          "evidence_summary": "We parse PDFs, summarize content, plan slides, and build editable PPTX files."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_09",
+      "slide_type": "experiments",
+      "title": "Experimental Setup",
+      "subtitle": "",
+      "purpose": "Describe evaluation setup, datasets, and metrics.",
+      "key_message": "We evaluate the pipeline with mock LLM outputs and local artifacts",
+      "bullets": [
+        "We evaluate the pipeline with mock LLM outputs and local artifacts"
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Experimental Setup' by leading with: We evaluate the pipeline with mock LLM outputs and local artifacts. Then walk through: We evaluate the pipeline with mock LLM outputs and local artifacts. Cite Experiments while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Experiments",
+          "figure_or_table_id": null,
+          "evidence_summary": "We evaluate the pipeline with mock LLM outputs and local artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    },
+    {
+      "slide_id": "slide_10",
+      "slide_type": "results",
+      "title": "Main Results",
+      "subtitle": "",
+      "purpose": "Present the main result evidence from the paper.",
+      "key_message": "The main results should be read directly from the paper evidence.",
+      "bullets": [
+        "The system produces editable slides and intermediate JSON artifacts"
+      ],
+      "visual_elements": [],
+      "speaker_notes": "Present 'Main Results' by leading with: The main results should be read directly from the paper evidence.. Then walk through: The system produces editable slides and intermediate JSON artifacts. Cite Results while explaining what is directly supported versus uncertain.",
+      "source_refs": [
+        {
+          "paper_id": "",
+          "page_number": 1,
+          "section_title": "Results",
+          "figure_or_table_id": null,
+          "evidence_summary": "The system produces editable slides and intermediate JSON artifacts."
+        }
+      ],
+      "confidence": 0.85,
+      "unsupported_claims": []
+    }
+  ]
+}

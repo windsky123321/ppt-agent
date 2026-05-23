@@ -1,0 +1,56 @@
+[
+  {
+    "id": "prompt_e8f65ddd",
+    "name": "中文研究生组会汇报",
+    "description": "面向研究生组会的中文学术汇报。",
+    "language": "zh",
+    "content": "请帮我把这篇论文做成中文组会汇报 PPT，听众是相关方向研究生。总页数控制在 15 页左右，重点讲研究问题、方法框架、核心创新、实验结果和局限性。不要逐字翻译论文，要像我在组会上讲一样自然。尽量使用论文里的图和表，每页加演讲稿。",
+    "created_at": "2026-05-23T16:07:11.369135+00:00",
+    "updated_at": "2026-05-23T16:07:11.369135+00:00"
+  },
+  {
+    "id": "prompt_f96ecb31",
+    "name": "英文专家会议报告",
+    "description": "面向专家听众的英文会议报告。",
+    "language": "en",
+    "content": "Please turn this paper into an expert-level English conference talk deck. Focus on the research problem, architecture, technical novelty, strongest experiments, limitations, and takeaways. Keep the slides concise, visual, and source-grounded.",
+    "created_at": "2026-05-23T16:07:11.369135+00:00",
+    "updated_at": "2026-05-23T16:07:11.369135+00:00"
+  },
+  {
+    "id": "prompt_ae11ab1e",
+    "name": "双语本科教学课件",
+    "description": "适合本科课堂讲解的双语课件。",
+    "language": "bilingual",
+    "content": "请把这篇论文整理成双语本科教学课件，重点解释背景、核心概念、方法流程和结果意义，减少公式，增强可讲解性，并给出演讲备注。",
+    "created_at": "2026-05-23T16:07:11.369135+00:00",
+    "updated_at": "2026-05-23T16:07:11.369135+00:00"
+  },
+  {
+    "id": "prompt_f7a9ff58",
+    "name": "批判性论文精读",
+    "description": "突出优点、局限性和讨论问题的精读模板。",
+    "language": "zh",
+    "content": "请做一份批判性论文精读 PPT，重点突出研究问题、方法假设、实验是否充分、优点、局限性和讨论问题。不要夸大论文结论。",
+    "created_at": "2026-05-23T16:07:11.369135+00:00",
+    "updated_at": "2026-05-23T16:07:11.369135+00:00"
+  },
+  {
+    "id": "prompt_28e6123f",
+    "name": "论文答辩风格汇报",
+    "description": "结构更完整的答辩风格 PPT。",
+    "language": "zh",
+    "content": "请按论文答辩风格生成 PPT，保留关键图表，结构完整，强调实验设计、结果解释和局限性。必要时增加备份页，但仍保持内容可编辑。",
+    "created_at": "2026-05-23T16:07:11.369135+00:00",
+    "updated_at": "2026-05-23T16:07:11.369135+00:00"
+  },
+  {
+    "id": "prompt_2c4b1747",
+    "name": "快速 8 页总结",
+    "description": "压缩版快速汇报模板。",
+    "language": "zh",
+    "content": "请将这篇论文压缩成 8 页以内的快速总结 PPT，只保留最关键的问题、方法、结果和结论，减少细节，适合快速读书会分享。",
+    "created_at": "2026-05-23T16:07:11.369135+00:00",
+    "updated_at": "2026-05-23T16:07:11.369135+00:00"
+  }
+]

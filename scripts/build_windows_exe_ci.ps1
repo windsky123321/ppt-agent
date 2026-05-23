@@ -40,6 +40,19 @@ if (-not (Test-Path -LiteralPath "desktop/launcher.py")) {
     exit 1
 }
 
+if (-not (Test-Path -LiteralPath "backend/app/storage")) {
+    Write-Host "backend/app/storage is missing before packaging"
+    exit 1
+}
+
+if (-not (Test-Path -LiteralPath "backend/app/storage/__init__.py")) {
+    Write-Host "backend/app/storage/__init__.py is missing before packaging"
+    exit 1
+}
+
+Write-Host "git ls-files backend/app/storage:"
+git ls-files backend/app/storage
+
 if (-not (Test-Path -LiteralPath "frontend/dist/index.html")) {
     Write-Host "frontend/dist/index.html not found. Building frontend..."
     Push-Location -LiteralPath "frontend"
@@ -57,6 +70,10 @@ Write-Host "launcher.spec exists:"
 Test-Path -LiteralPath "packaging/launcher.spec"
 Write-Host "desktop/launcher.py exists:"
 Test-Path -LiteralPath "desktop/launcher.py"
+Write-Host "backend/app/storage exists:"
+Test-Path -LiteralPath "backend/app/storage"
+Write-Host "backend/app/storage/__init__.py exists:"
+Test-Path -LiteralPath "backend/app/storage/__init__.py"
 Write-Host "frontend/dist/index.html exists:"
 Test-Path -LiteralPath "frontend/dist/index.html"
 Write-Host "launcher.spec preview:"

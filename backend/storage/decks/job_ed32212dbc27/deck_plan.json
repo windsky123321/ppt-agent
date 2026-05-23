@@ -1,0 +1,88 @@
+{
+  "deck_title": "Sample Research Paper",
+  "target_audience": "graduate",
+  "language": "en",
+  "slide_count": 10,
+  "slides": [
+    {
+      "slide_id": "slide_01",
+      "slide_type": "title",
+      "title": "Title",
+      "purpose": "Introduce the paper, authors, and context.",
+      "key_section": "",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_02",
+      "slide_type": "takeaway",
+      "title": "One-Slide Takeaway",
+      "purpose": "State the main idea and outcome in one slide.",
+      "key_section": "abstract",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_03",
+      "slide_type": "divider",
+      "title": "Problem Setting",
+      "purpose": "Transition into the paper motivation and problem framing.",
+      "key_section": "introduction",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_04",
+      "slide_type": "background",
+      "title": "Background / Motivation",
+      "purpose": "Explain why the problem matters.",
+      "key_section": "background",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_05",
+      "slide_type": "problem",
+      "title": "Research Problem",
+      "purpose": "Define the specific problem tackled by the paper.",
+      "key_section": "problem",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_06",
+      "slide_type": "contributions",
+      "title": "Key Contributions",
+      "purpose": "Summarize the main contributions.",
+      "key_section": "method",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_07",
+      "slide_type": "method",
+      "title": "Method Overview",
+      "purpose": "Present the method at a high level.",
+      "key_section": "method",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_08",
+      "slide_type": "technical",
+      "title": "Technical Details / Architecture",
+      "purpose": "Cover the technical design choices.",
+      "key_section": "technical",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_09",
+      "slide_type": "experiments",
+      "title": "Experimental Setup",
+      "purpose": "Describe evaluation setup, datasets, and metrics.",
+      "key_section": "experiments",
+      "asset_ids": []
+    },
+    {
+      "slide_id": "slide_10",
+      "slide_type": "results",
+      "title": "Main Results",
+      "purpose": "Present the main result evidence from the paper.",
+      "key_section": "results",
+      "asset_ids": []
+    }
+  ]
+}

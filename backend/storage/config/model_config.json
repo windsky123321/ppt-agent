@@ -1,0 +1,22 @@
+{
+  "llm_provider": "mock",
+  "llm_base_url": "https://api.openai.com/v1",
+  "llm_api_key": "",
+  "llm_model": "gpt-5.5",
+  "fallback_llm_model": "gpt-4.1-mini",
+  "vision_provider": "mock",
+  "vision_base_url": "https://api.openai.com/v1",
+  "vision_api_key": "",
+  "vision_model": "gpt-4.1-mini",
+  "enable_vision": true,
+  "enable_critic": true,
+  "enable_repair": true,
+  "max_repair_loops": 2,
+  "reasoning_effort": "low",
+  "verbosity": "low",
+  "temperature": 0.2,
+  "patch_mode": true,
+  "revision_max_output_tokens": 1200,
+  "normal_max_output_tokens": 4000,
+  "output_dir": "D:/Reports/PPT"
+}

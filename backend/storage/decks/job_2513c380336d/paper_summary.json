@@ -1,0 +1,40 @@
+{
+  "title": "Sample Research Paper",
+  "one_sentence_summary": "This paper studies a simple benchmark for automatic presentation generation",
+  "problem": "This work focuses on reliable local-first paper to PPT generation",
+  "motivation": "This work focuses on reliable local-first paper to PPT generation",
+  "research_gap": "Research gap is uncertain from the parsed introduction and abstract.",
+  "key_contributions": [
+    "We parse PDFs, summarize content, plan slides, and build editable PPTX files",
+    "The system produces editable slides and intermediate JSON artifacts"
+  ],
+  "method_overview": "We parse PDFs, summarize content, plan slides, and build editable PPTX files",
+  "experiment_setup": "We evaluate the pipeline with mock LLM outputs and local artifacts",
+  "main_results": [
+    "The system produces editable slides and intermediate JSON artifacts"
+  ],
+  "strengths": [
+    "The paper provides a concrete method section that can be presented clearly.",
+    "The paper includes an explicit experimental setup section.",
+    "The paper reports result-related evidence that can be grounded to specific sections."
+  ],
+  "limitations": [
+    "The system produces editable slides and intermediate JSON artifacts"
+  ],
+  "discussion_points": [
+    "Does the proposed method fully address the stated gap: Research gap is uncertain from the parsed introduction and abstract.",
+    "Which reported result matters most for evaluating the paper: The system produces editable slides and intermediate JSON artifacts",
+    "Which limitation is most important to discuss: The system produces editable slides and intermediate JSON artifacts"
+  ],
+  "conclusion": "The system produces editable slides and intermediate JSON artifacts",
+  "keywords": [
+    "sample",
+    "research",
+    "paper",
+    "studies",
+    "simple",
+    "benchmark",
+    "automatic",
+    "presentation"
+  ]
+}

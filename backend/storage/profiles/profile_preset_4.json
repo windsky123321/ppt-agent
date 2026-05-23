@@ -1,0 +1,24 @@
+{
+  "id": "profile_preset_4",
+  "name": "Critical Review Lab Meeting",
+  "audience": "lab_meeting",
+  "presentation_goal": "critique",
+  "preferred_language": "en",
+  "tone": "concise",
+  "slide_count_target": 14,
+  "talk_duration_minutes": 12,
+  "math_level": "balanced",
+  "include_speaker_notes": true,
+  "include_limitations": true,
+  "include_discussion_questions": true,
+  "include_source_footers": true,
+  "theme_id": "academic_clean",
+  "brand_colors": [
+    "#b91c1c",
+    "#0f172a"
+  ],
+  "title_font": "Aptos Display",
+  "body_font": "Aptos",
+  "custom_instructions": "",
+  "long_generation_instruction": ""
+}

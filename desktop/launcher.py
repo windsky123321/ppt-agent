@@ -98,22 +98,44 @@ class DesktopLauncher:
     def log_runtime_diagnostics(self) -> None:
         backend_path = str(BACKEND_ROOT)
         env_pythonpath = self.backend_env.get("PYTHONPATH", "") if self.backend_env else os.environ.get("PYTHONPATH", "")
+        storage_dir = BACKEND_ROOT / "app" / "storage"
+        storage_init = storage_dir / "__init__.py"
         self.log(f"frozen={getattr(sys, 'frozen', False)}")
         self.log(f"app_root={APP_ROOT}")
         self.log(f"runtime_root={RUNTIME_ROOT}")
         self.log(f"backend_root={BACKEND_ROOT}")
+        self.log(f"backend_root exists={BACKEND_ROOT.exists()}")
+        self.log(f"backend_root/app exists={(BACKEND_ROOT / 'app').exists()}")
+        self.log(f"backend_root/app/storage exists={storage_dir.exists()}")
+        self.log(f"backend_root/app/storage/__init__.py exists={storage_init.exists()}")
         self.log(f"frontend_dist={frontend_dist_dir()}")
         self.log(f"sys.path[:5]={sys.path[:5]}")
         self.log(f"PYTHONPATH={env_pythonpath}")
+        if storage_dir.exists():
+            try:
+                storage_items = sorted(str(path.relative_to(BACKEND_ROOT)) for path in storage_dir.rglob("*"))[:20]
+                self.log(f"backend_root/app/storage files={storage_items}")
+            except Exception as exc:
+                self.log(f"backend_root/app/storage files=fail: {exc}")
         try:
             if backend_path not in sys.path:
                 sys.path.insert(0, backend_path)
             import importlib
 
+            importlib.import_module("app")
+            self.log("app import=ok")
             importlib.import_module("app.storage")
             self.log("app.storage import=ok")
+            importlib.import_module("app.main")
+            self.log("app.main import=ok")
         except Exception as exc:
-            self.log(f"app.storage import=fail: {exc}")
+            message = str(exc)
+            if "app.storage" in message:
+                self.log(f"app.storage import=fail: {exc}")
+            elif "app.main" in message:
+                self.log(f"app.main import=fail: {exc}")
+            else:
+                self.log(f"app import diagnostics fail: {exc}")
 
     def start_async(self) -> None:
         threading.Thread(target=self.start, daemon=True).start()
@@ -123,6 +145,8 @@ class DesktopLauncher:
             self.ensure_env()
             self.prepare_backend_path()
             self.log_runtime_diagnostics()
+            if not self.static_frontend_ready():
+                raise RuntimeError("未找到前端资源，请重新构建发布包。")
             self.ensure_ports()
             if getattr(sys, "frozen", False):
                 self.start_backend_embedded()
@@ -134,7 +158,11 @@ class DesktopLauncher:
             self.set_status("已启动，可以上传 PDF 生成 PPT")
         except Exception as exc:
             self.set_status("启动失败")
-            messagebox.showerror(APP_NAME, f"启动失败：{exc}\n请查看 logs/launcher.log")
+            message = str(exc)
+            if "app.storage" in message:
+                messagebox.showerror(APP_NAME, "启动失败：发布包缺少后端 storage 模块，请重新下载最新构建包。")
+            else:
+                messagebox.showerror(APP_NAME, f"启动失败：{exc}\n请查看 logs/launcher.log")
 
     def ensure_env(self) -> None:
         os.chdir(RUNTIME_ROOT)

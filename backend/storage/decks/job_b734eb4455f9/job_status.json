@@ -1,0 +1,118 @@
+{
+  "job_id": "job_b734eb4455f9",
+  "status": "completed",
+  "paper_id": "job_b734eb4455f9",
+  "deck_id": "job_b734eb4455f9",
+  "message": "Generated deck for sample_paper.pdf",
+  "artifacts": [
+    {
+      "name": "original.pdf",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\original.pdf",
+      "exists": false,
+      "modified_time": null,
+      "download_url": null
+    },
+    {
+      "name": "parsed_paper.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\parsed_paper.json",
+      "exists": true,
+      "modified_time": 1779559191.547624,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/parsed_paper.json"
+    },
+    {
+      "name": "extracted_assets.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\extracted_assets.json",
+      "exists": true,
+      "modified_time": 1779559191.5596163,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/extracted_assets.json"
+    },
+    {
+      "name": "paper_summary.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\paper_summary.json",
+      "exists": true,
+      "modified_time": 1779559191.5772808,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/paper_summary.json"
+    },
+    {
+      "name": "deck_plan.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\deck_plan.json",
+      "exists": true,
+      "modified_time": 1779559191.5840902,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/deck_plan.json"
+    },
+    {
+      "name": "slide_drafts.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\slide_drafts.json",
+      "exists": true,
+      "modified_time": 1779559191.5930698,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/slide_drafts.json"
+    },
+    {
+      "name": "grounding_report.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\grounding_report.json",
+      "exists": true,
+      "modified_time": 1779559191.6002638,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/grounding_report.json"
+    },
+    {
+      "name": "critic_report.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\critic_report.json",
+      "exists": true,
+      "modified_time": 1779559191.606593,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/critic_report.json"
+    },
+    {
+      "name": "repair_history.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\repair_history.json",
+      "exists": false,
+      "modified_time": null,
+      "download_url": null
+    },
+    {
+      "name": "user_instruction_raw.md",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\user_instruction_raw.md",
+      "exists": true,
+      "modified_time": 1779559191.5304723,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/user_instruction_raw.md"
+    },
+    {
+      "name": "user_instruction_spec.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\user_instruction_spec.json",
+      "exists": true,
+      "modified_time": 1779559191.5336986,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/user_instruction_spec.json"
+    },
+    {
+      "name": "merged_generation_config.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\merged_generation_config.json",
+      "exists": true,
+      "modified_time": 1779559191.5382888,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/merged_generation_config.json"
+    },
+    {
+      "name": "prompt_merge_report.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\prompt_merge_report.json",
+      "exists": true,
+      "modified_time": 1779559191.5357368,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/prompt_merge_report.json"
+    },
+    {
+      "name": "final_deck.pptx",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\final_deck.pptx",
+      "exists": true,
+      "modified_time": 1779559191.7416222,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/final_deck.pptx"
+    },
+    {
+      "name": "job_status.json",
+      "path": "C:\\Users\\windysky\\Documents\\ppt agent\\backend\\storage\\decks\\job_b734eb4455f9\\job_status.json",
+      "exists": true,
+      "modified_time": 1779559191.612245,
+      "download_url": "/api/decks/job_b734eb4455f9/artifacts/job_status.json"
+    }
+  ],
+  "profile_id": "profile_inline_5f804be8",
+  "current_stage": "Complete",
+  "critic_approved": true,
+  "grounding_warning_count": 0
+}

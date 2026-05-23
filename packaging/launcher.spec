@@ -11,6 +11,7 @@ project_root = spec_dir.parent
 launcher_script = str(project_root / "desktop" / "launcher.py")
 backend_root = project_root / "backend"
 backend_app = project_root / "backend" / "app"
+backend_storage = project_root / "backend" / "app" / "storage"
 frontend_dist = project_root / "frontend" / "dist"
 icon_path = project_root / "packaging" / "app.ico"
 env_example = project_root / ".env.example"
@@ -41,6 +42,8 @@ if frontend_dist.exists():
     datas.append((str(frontend_dist), "frontend/dist"))
 if backend_app.exists():
     datas.append((str(backend_app), "backend/app"))
+if backend_storage.exists():
+    datas.append((str(backend_storage), "backend/app/storage"))
 if env_example.exists():
     datas.append((str(env_example), "."))
 
