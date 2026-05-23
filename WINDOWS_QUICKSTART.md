@@ -1,78 +1,63 @@
-# Windows 快速开始
+# Windows 快速开始 v0.1.0
 
-## 运行 EXE
+## 下载安装
 
-1. 从 GitHub Actions 下载 artifact `PPT-Agent-Windows-Release`
-2. 解压后进入 `release/`
-3. 双击 `PPT-Agent.exe`
-4. 等待浏览器自动打开 Web UI
+1. 打开仓库 `Actions`
+2. 进入 `Build Windows EXE`
+3. 下载 artifact `PPT-Agent-Windows-Release`
+4. 解压后进入 `release/`
+5. 双击 `PPT-Agent.exe`
 
 ## 第一次启动
 
 如果本机还没有 `.env`：
 
 - 启动器会基于 `.env.example` 自动创建
-- 不会覆盖用户已有 `.env`
+- 不会覆盖已有 `.env`
 
 首次使用建议：
 
 1. 打开“模型配置”
-2. 填写 API Key，或直接切换到 Mock 模式
+2. 填写 API Key，或切换到 Mock 模式
 3. 返回工作台上传 PDF
 4. 点击“生成 PPT”
 5. 在“生成结果”中下载 PPT
 
-## 如何生成 EXE
-
-本机 Windows：
+## 本机构建
 
 ```bat
 build_release_windows.bat
 ```
 
-GitHub Actions：
+输出目录：
 
-1. 打开 `Actions`
-2. 运行 `Build Windows EXE`
-3. 下载 artifact `PPT-Agent-Windows-Release`
+- `release/PPT-Agent.exe`
+- `release/README.md`
+- `release/WINDOWS_QUICKSTART.md`
+- `release/RELEASE_NOTES.md`
+- `release/.env.example`
 
-## PyInstaller 安装失败怎么办
+## Mock 模式
 
-先尝试：
+如果暂时没有 API Key：
 
-```bat
-python -m pip install pyinstaller
-```
+1. 进入“模型配置”
+2. 点击“切换到 Mock 模式”
+3. 保存配置
+4. 上传测试 PDF 验证完整流程
 
-如果网络受限：
+## API Key 说明
 
-1. 在可联网机器下载 PyInstaller wheel
-2. 放入 `packaging/wheelhouse/`
-3. 重新运行 `build_release_windows.bat`
+- API Key 不会写入 EXE
+- API Key 不会写入 GitHub Actions artifact
+- API Key 不会写入示例配置
+- 真实 Key 仅保存在本机运行时配置中
 
-## Mock 模式测试
+## 常见问题
 
-如果你暂时没有 API Key：
-
-- 进入“模型配置”
-- 点击“切换到 Mock 模式”
-- 保存后即可上传测试 PDF 验证完整流程
-
-## 日志与输出
-
-- 启动日志：`logs/launcher.log`
-- 后端日志：`logs/backend.log`
-- 前端日志：`logs/frontend.log`
-- 默认输出目录：`storage/decks`
-
-## Portable 兜底包
-
-如果 EXE 构建失败，脚本会生成：
-
-- `release/PPT-Agent-Portable/`
-
-说明：
-
-- Portable 包不是最终 EXE
-- 可用于先跑通本地服务
-- EXE 仍是最终推荐交付物
+- Windows 阻止运行：右键 EXE，检查“解除锁定”。
+- API Key 未配置：去“模型配置”填写，或改用 Mock 模式。
+- 端口占用：关闭占用 `8000` 端口的程序。
+- 生成失败：查看 `logs/backend.log` 与 `logs/launcher.log`。
+- 找不到下载文件：查看“生成结果”里的 `final_deck.pptx` 路径。
+- 杀毒软件误报：优先使用最新 artifact，并加入白名单。

@@ -65,8 +65,6 @@ jobs:
           if (-not (Test-Path "packaging/launcher.spec")) { throw "缺少 packaging/launcher.spec" }
           if (-not (Test-Path "desktop/launcher.py")) { throw "缺少 desktop/launcher.py" }
           if (-not (Test-Path "frontend/dist/index.html")) { throw "缺少 frontend/dist/index.html" }
-          Get-ChildItem packaging
-          Get-ChildItem desktop
 
       - name: PowerShell 语法检查
         shell: powershell

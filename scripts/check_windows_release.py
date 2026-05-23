@@ -20,7 +20,7 @@ def main() -> int:
     print(f"frontend/dist/index.html 是否存在：{(ROOT / 'frontend' / 'dist' / 'index.html').exists()}")
     if RELEASE_DIR.exists():
         print("release 目录内容：")
-        for path in sorted(RELEASE_DIR.rglob("*")):
+        for path in sorted(RELEASE_DIR.rglob('*')):
             print(f"- {path.relative_to(ROOT)}")
     else:
         print("release 目录不存在。")
