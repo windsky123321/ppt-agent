@@ -65,10 +65,10 @@ jobs:
           Get-ChildItem packaging
           Get-ChildItem desktop
 
-      - name: 执行 Windows 打包脚本
-        shell: cmd
+      - name: 执行 CI 专用 Windows EXE 构建脚本
+        shell: powershell
         run: |
-          call build_release_windows.bat
+          powershell -ExecutionPolicy Bypass -File scripts/build_windows_exe_ci.ps1
 
       - name: 校验发布目录
         shell: powershell

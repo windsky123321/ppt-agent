@@ -50,6 +50,7 @@ def test_windows_product_files_exist():
         "packaging/install_packaging_deps.py",
         "build_release_windows.bat",
         ".github/workflows/build-windows-exe.yml",
+        "scripts/build_windows_exe_ci.ps1",
         "scripts/check_windows_release.py",
         "README.md",
         "RELEASE_NOTES.md",
@@ -151,7 +152,8 @@ def test_github_actions_workflow_exists_and_is_windows():
     assert "python -m pip install --upgrade pip" in workflow_text
     assert "python -m pip install pyinstaller" in workflow_text
     assert "python -m PyInstaller --version" in workflow_text
-    assert "build_release_windows.bat" in workflow_text
+    assert "build_windows_exe_ci.ps1" in workflow_text
+    assert "build_release_windows.bat" not in workflow_text
     assert "actions/upload-artifact@v4" in workflow_text
     assert "PPT-Agent-Windows-Release" in workflow_text
 
@@ -168,6 +170,21 @@ def test_release_check_script_exists_and_validates_expected_files():
     assert "packaging/launcher.spec 是否存在" in script_text
     assert "desktop/launcher.py 是否存在" in script_text
     assert "frontend/dist/index.html 是否存在" in script_text
+    assert "logs" in script_text
+    assert "outputs" in script_text
+    assert "temp" in script_text
+    assert "uploads" in script_text
+
+
+def test_ci_build_script_exists_and_uses_python_module_pyinstaller():
+    script_text = (ROOT / "scripts" / "build_windows_exe_ci.ps1").read_text(encoding="utf-8")
+    assert '$ErrorActionPreference = "Stop"' in script_text
+    assert "python -m pip install pyinstaller" in script_text
+    assert "python -m PyInstaller --version" in script_text
+    assert "python -m PyInstaller packaging/launcher.spec --noconfirm --clean" in script_text
+    assert "release/PPT-Agent.exe" in script_text
+    assert ".env.example" in script_text
+    assert ".env" in script_text
     assert "logs" in script_text
     assert "outputs" in script_text
     assert "temp" in script_text
