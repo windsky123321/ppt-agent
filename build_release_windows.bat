@@ -170,6 +170,8 @@ copy /Y WINDOWS_QUICKSTART.md release\WINDOWS_QUICKSTART.md >> "%LOG_FILE%" 2>&1
 if errorlevel 1 exit /b 1
 copy /Y RELEASE_NOTES.md release\RELEASE_NOTES.md >> "%LOG_FILE%" 2>&1
 if errorlevel 1 exit /b 1
+copy /Y TROUBLESHOOTING.md release\TROUBLESHOOTING.md >> "%LOG_FILE%" 2>&1
+if errorlevel 1 exit /b 1
 copy /Y .env.example release\.env.example >> "%LOG_FILE%" 2>&1
 if errorlevel 1 exit /b 1
 exit /b 0

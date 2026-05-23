@@ -151,6 +151,9 @@ if (Test-Path -LiteralPath "WINDOWS_QUICKSTART.md") {
 if (Test-Path -LiteralPath "RELEASE_NOTES.md") {
     Copy-Item -LiteralPath "RELEASE_NOTES.md" -Destination "release/RELEASE_NOTES.md" -Force
 }
+if (Test-Path -LiteralPath "TROUBLESHOOTING.md") {
+    Copy-Item -LiteralPath "TROUBLESHOOTING.md" -Destination "release/TROUBLESHOOTING.md" -Force
+}
 if (Test-Path -LiteralPath ".env.example") {
     Copy-Item -LiteralPath ".env.example" -Destination "release/.env.example" -Force
 }

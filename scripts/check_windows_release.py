@@ -29,6 +29,7 @@ def main() -> int:
         RELEASE_DIR / "PPT-Agent.exe",
         RELEASE_DIR / "README.md",
         RELEASE_DIR / "WINDOWS_QUICKSTART.md",
+        RELEASE_DIR / "TROUBLESHOOTING.md",
         RELEASE_DIR / ".env.example",
     ]
     for path in required:

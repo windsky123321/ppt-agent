@@ -50,11 +50,14 @@ def test_windows_product_files_exist():
         "packaging/install_packaging_deps.py",
         "build_release_windows.bat",
         ".github/workflows/build-windows-exe.yml",
+        ".github/workflows/release-windows.yml",
         "scripts/build_windows_exe_ci.ps1",
         "scripts/check_windows_release.py",
+        "VERSION",
         "README.md",
         "RELEASE_NOTES.md",
         "WINDOWS_QUICKSTART.md",
+        "TROUBLESHOOTING.md",
         "start_windows.bat",
         "stop_windows.bat",
     ]
@@ -193,6 +196,7 @@ def test_build_release_script_smoke_strings():
     assert "logs\\build_windows.log" in script_text
     assert "release\\PPT-Agent.exe" in script_text
     assert "release\\PPT-Agent-Portable" in script_text
+    assert "TROUBLESHOOTING.md" in script_text
     assert "CI_STRICT_MODE" in script_text
 
 
@@ -212,6 +216,20 @@ def test_github_actions_workflow_exists_and_is_windows():
     assert "PPT-Agent-Windows-Release" in workflow_text
 
 
+def test_release_workflow_exists_and_uses_tag_trigger():
+    workflow_text = (ROOT / ".github" / "workflows" / "release-windows.yml").read_text(encoding="utf-8")
+    assert "name: Release Windows EXE" in workflow_text
+    assert 'tags:' in workflow_text
+    assert '- "v*"' in workflow_text
+    assert "windows-latest" in workflow_text
+    assert "scripts/build_windows_exe_ci.ps1" in workflow_text
+    assert "Compress-Archive" in workflow_text
+    assert "softprops/action-gh-release@v2" in workflow_text
+    assert "PPT Agent Windows ${{ github.ref_name }}" in workflow_text
+    assert "body_path: RELEASE_NOTES.md" in workflow_text
+    assert "PPT-Agent-Windows-$tag" in workflow_text
+
+
 def test_release_check_script_exists_and_validates_expected_files():
     script_text = (ROOT / "scripts" / "check_windows_release.py").read_text(encoding="utf-8")
     assert 'sys.stdout.reconfigure(encoding="utf-8", errors="replace")' in script_text
@@ -219,6 +237,7 @@ def test_release_check_script_exists_and_validates_expected_files():
     assert "PPT-Agent.exe" in script_text
     assert "README.md" in script_text
     assert "WINDOWS_QUICKSTART.md" in script_text
+    assert "TROUBLESHOOTING.md" in script_text
     assert ".env.example" in script_text
     assert "未找到 PPT-Agent.exe" in script_text
     assert "当前目录" in script_text
@@ -245,6 +264,7 @@ def test_ci_build_script_exists_and_uses_python_module_pyinstaller():
     assert "git ls-files backend/app/storage" in script_text
     assert "backend/app/storage is missing before packaging" in script_text
     assert "release/PPT-Agent.exe" in script_text
+    assert "TROUBLESHOOTING.md" in script_text
     assert ".env.example" in script_text
     assert ".env" in script_text
     assert "logs" in script_text
@@ -261,3 +281,8 @@ def test_ci_build_script_exists_and_uses_python_module_pyinstaller():
 def test_ci_build_script_has_balanced_braces():
     script_text = (ROOT / "scripts" / "build_windows_exe_ci.ps1").read_text(encoding="utf-8")
     assert script_text.count("{") == script_text.count("}")
+
+
+def test_version_file_is_v010():
+    version_text = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    assert version_text == "v0.1.0"
