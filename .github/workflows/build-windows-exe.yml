@@ -65,6 +65,15 @@ jobs:
           Get-ChildItem packaging
           Get-ChildItem desktop
 
+      - name: PowerShell 语法检查
+        shell: powershell
+        run: |
+          $scriptContent = Get-Content -Raw 'scripts/build_windows_exe_ci.ps1'
+          $errors = $null
+          [void][System.Management.Automation.PSParser]::Tokenize($scriptContent, [ref]$errors)
+          if ($errors -and $errors.Count -gt 0) { throw 'PowerShell syntax check failed' }
+          Write-Host 'PowerShell syntax check passed'
+
       - name: 执行 CI 专用 Windows EXE 构建脚本
         shell: powershell
         run: |

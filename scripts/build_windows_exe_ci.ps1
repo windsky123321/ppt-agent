@@ -1,89 +1,142 @@
 $ErrorActionPreference = "Stop"
 
-$root = Split-Path -Parent $PSScriptRoot
-Set-Location -LiteralPath $root
+$repoRoot = Split-Path -Parent $PSScriptRoot
+Set-Location -LiteralPath $repoRoot
 
-Write-Host "当前目录：$(Get-Location)"
-Write-Host "Python 版本："
+Write-Host "Current directory:"
+Get-Location
+
+Write-Host "Python version:"
 python --version
-Write-Host "pip 版本："
+
+Write-Host "pip version:"
 python -m pip --version
-Write-Host "Node 版本："
+
+Write-Host "Node version:"
 node --version
-Write-Host "npm 版本："
+
+Write-Host "npm version:"
 npm.cmd --version
 
-Write-Host "正在升级 pip……"
+Write-Host "Upgrading pip..."
 python -m pip install --upgrade pip
-Write-Host "正在安装 PyInstaller……"
+
+Write-Host "Installing PyInstaller..."
 python -m pip install pyinstaller
-Write-Host "PyInstaller 包信息："
+
+Write-Host "PyInstaller package info:"
 python -m pip show pyinstaller
-Write-Host "PyInstaller 版本："
+
+Write-Host "PyInstaller version:"
 python -m PyInstaller --version
 
-if (-not (Test-Path "packaging/launcher.spec")) {
-    throw "缺少 packaging/launcher.spec"
+if (-not (Test-Path -LiteralPath "packaging/launcher.spec")) {
+    Write-Host "Missing packaging/launcher.spec"
+    exit 1
 }
-if (-not (Test-Path "desktop/launcher.py")) {
-    throw "缺少 desktop/launcher.py"
+
+if (-not (Test-Path -LiteralPath "desktop/launcher.py")) {
+    Write-Host "Missing desktop/launcher.py"
+    exit 1
 }
-if (-not (Test-Path "frontend/dist/index.html")) {
-    Write-Host "未检测到 frontend/dist/index.html，正在构建前端……"
-    Set-Location -LiteralPath (Join-Path $root "frontend")
-    if (Test-Path "package-lock.json") {
+
+if (-not (Test-Path -LiteralPath "frontend/dist/index.html")) {
+    Write-Host "frontend/dist/index.html not found. Building frontend..."
+    Push-Location -LiteralPath "frontend"
+    if (Test-Path -LiteralPath "package-lock.json") {
         npm.cmd ci
     }
     else {
         npm.cmd install
     }
     npm.cmd run build
-    Set-Location -LiteralPath $root
+    Pop-Location
 }
 
-Write-Host "正在清理旧构建目录……"
-if (Test-Path "release") {
-    Remove-Item -Recurse -Force "release"
+if (Test-Path -LiteralPath "release") {
+    Remove-Item -LiteralPath "release" -Recurse -Force
 }
-if (Test-Path "build") {
-    Remove-Item -Recurse -Force "build"
+if (Test-Path -LiteralPath "build") {
+    Remove-Item -LiteralPath "build" -Recurse -Force
 }
-if (Test-Path "dist") {
-    Remove-Item -Recurse -Force "dist"
+if (Test-Path -LiteralPath "dist") {
+    Remove-Item -LiteralPath "dist" -Recurse -Force
 }
+
 New-Item -ItemType Directory -Path "release" | Out-Null
 
-Write-Host "正在打包 PPT-Agent.exe……"
+Write-Host "Running PyInstaller..."
 python -m PyInstaller packaging/launcher.spec --noconfirm --clean
 
-if (-not (Test-Path "dist/PPT-Agent.exe")) {
-    Write-Host "未找到 dist/PPT-Agent.exe，输出诊断信息："
-    foreach ($folder in @("release", "dist", "build")) {
-        if (Test-Path $folder) {
-            Write-Host "目录内容：$folder"
-            Get-ChildItem -Recurse -Force $folder
-        }
-        else {
-            Write-Host "目录不存在：$folder"
-        }
+if (-not (Test-Path -LiteralPath "dist/PPT-Agent.exe")) {
+    Write-Host "dist/PPT-Agent.exe not found"
+
+    if (Test-Path -LiteralPath "release") {
+        Write-Host "release contents:"
+        Get-ChildItem -LiteralPath "release" -Recurse -Force
     }
-    throw "未能生成 dist/PPT-Agent.exe"
-}
-
-Copy-Item "dist/PPT-Agent.exe" "release/PPT-Agent.exe" -Force
-Copy-Item "README.md" "release/README.md" -Force
-Copy-Item "WINDOWS_QUICKSTART.md" "release/WINDOWS_QUICKSTART.md" -Force
-Copy-Item "RELEASE_NOTES.md" "release/RELEASE_NOTES.md" -Force
-Copy-Item ".env.example" "release/.env.example" -Force
-
-foreach ($forbidden in @(".env", "logs", "outputs", "temp", "uploads")) {
-    if (Test-Path (Join-Path "release" $forbidden)) {
-        throw "release 中不应包含 $forbidden"
+    else {
+        Write-Host "release directory not found"
     }
+
+    if (Test-Path -LiteralPath "dist") {
+        Write-Host "dist contents:"
+        Get-ChildItem -LiteralPath "dist" -Recurse -Force
+    }
+    else {
+        Write-Host "dist directory not found"
+    }
+
+    if (Test-Path -LiteralPath "build") {
+        Write-Host "build contents:"
+        Get-ChildItem -LiteralPath "build" -Recurse -Force
+    }
+    else {
+        Write-Host "build directory not found"
+    }
+
+    exit 1
 }
 
-if (-not (Test-Path "release/PPT-Agent.exe")) {
-    throw "未找到 release/PPT-Agent.exe"
+Copy-Item -LiteralPath "dist/PPT-Agent.exe" -Destination "release/PPT-Agent.exe" -Force
+
+if (Test-Path -LiteralPath "README.md") {
+    Copy-Item -LiteralPath "README.md" -Destination "release/README.md" -Force
+}
+if (Test-Path -LiteralPath "WINDOWS_QUICKSTART.md") {
+    Copy-Item -LiteralPath "WINDOWS_QUICKSTART.md" -Destination "release/WINDOWS_QUICKSTART.md" -Force
+}
+if (Test-Path -LiteralPath "RELEASE_NOTES.md") {
+    Copy-Item -LiteralPath "RELEASE_NOTES.md" -Destination "release/RELEASE_NOTES.md" -Force
+}
+if (Test-Path -LiteralPath ".env.example") {
+    Copy-Item -LiteralPath ".env.example" -Destination "release/.env.example" -Force
 }
 
-Write-Host "GitHub Actions Windows EXE 构建成功：release/PPT-Agent.exe"
+if (Test-Path -LiteralPath "release/.env") {
+    Write-Host "release/.env must not exist"
+    exit 1
+}
+if (Test-Path -LiteralPath "release/logs") {
+    Write-Host "release/logs must not exist"
+    exit 1
+}
+if (Test-Path -LiteralPath "release/outputs") {
+    Write-Host "release/outputs must not exist"
+    exit 1
+}
+if (Test-Path -LiteralPath "release/temp") {
+    Write-Host "release/temp must not exist"
+    exit 1
+}
+if (Test-Path -LiteralPath "release/uploads") {
+    Write-Host "release/uploads must not exist"
+    exit 1
+}
+
+if (-not (Test-Path -LiteralPath "release/PPT-Agent.exe")) {
+    Write-Host "release/PPT-Agent.exe not found"
+    exit 1
+}
+
+Write-Host "CI Windows EXE build succeeded: release/PPT-Agent.exe"

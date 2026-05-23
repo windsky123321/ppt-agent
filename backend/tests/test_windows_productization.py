@@ -154,6 +154,8 @@ def test_github_actions_workflow_exists_and_is_windows():
     assert "python -m PyInstaller --version" in workflow_text
     assert "build_windows_exe_ci.ps1" in workflow_text
     assert "build_release_windows.bat" not in workflow_text
+    assert "PSParser" in workflow_text
+    assert "PowerShell syntax check passed" in workflow_text
     assert "actions/upload-artifact@v4" in workflow_text
     assert "PPT-Agent-Windows-Release" in workflow_text
 
@@ -189,3 +191,10 @@ def test_ci_build_script_exists_and_uses_python_module_pyinstaller():
     assert "outputs" in script_text
     assert "temp" in script_text
     assert "uploads" in script_text
+    assert "Current directory:" in script_text
+    assert "CI Windows EXE build succeeded: release/PPT-Agent.exe" in script_text
+
+
+def test_ci_build_script_has_balanced_braces():
+    script_text = (ROOT / "scripts" / "build_windows_exe_ci.ps1").read_text(encoding="utf-8")
+    assert script_text.count("{") == script_text.count("}")
