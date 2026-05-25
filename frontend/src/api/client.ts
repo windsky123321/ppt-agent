@@ -6,7 +6,14 @@ import type {
   PromptTemplate,
   RuntimeModelConfig,
   RuntimeModelConfigView,
+  SkillImportResponse,
+  SkillManifest,
+  SkillSearchRequest,
+  SkillSearchResult,
+  SkillTestResponse,
   UploadResponse,
+  UsageSummary,
+  UsageTaskDetail,
   UserProfile,
 } from "../types";
 
@@ -136,4 +143,75 @@ export async function savePromptTemplate(template: PromptTemplate): Promise<Prom
     body: JSON.stringify(template),
   });
   return parseJsonOrThrow(response, "保存提示词模板失败。");
+}
+
+export async function fetchSkills(): Promise<SkillManifest[]> {
+  const response = await fetch(`${API_BASE}/api/skills`);
+  const payload = await parseJsonOrThrow(response, "读取技能列表失败。");
+  return payload.skills;
+}
+
+export async function searchSkills(payload: SkillSearchRequest): Promise<SkillSearchResult[]> {
+  const response = await fetch(`${API_BASE}/api/skills/search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJsonOrThrow(response, "搜索技能失败。");
+  return data.results;
+}
+
+export async function importSkill(formData: FormData): Promise<SkillImportResponse> {
+  const response = await fetch(`${API_BASE}/api/skills/import`, {
+    method: "POST",
+    body: formData,
+  });
+  return parseJsonOrThrow(response, "导入技能失败。");
+}
+
+export async function enableSkill(skillId: string): Promise<SkillManifest> {
+  const response = await fetch(`${API_BASE}/api/skills/${skillId}/enable`, { method: "POST" });
+  return parseJsonOrThrow(response, "启用技能失败。");
+}
+
+export async function disableSkill(skillId: string): Promise<SkillManifest> {
+  const response = await fetch(`${API_BASE}/api/skills/${skillId}/disable`, { method: "POST" });
+  return parseJsonOrThrow(response, "禁用技能失败。");
+}
+
+export async function deleteSkill(skillId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/api/skills/${skillId}`, { method: "DELETE" });
+  await parseJsonOrThrow(response, "删除技能失败。");
+}
+
+export async function testSkill(skillId: string): Promise<SkillTestResponse> {
+  const response = await fetch(`${API_BASE}/api/skills/${skillId}/test`, { method: "POST" });
+  return parseJsonOrThrow(response, "测试技能失败。");
+}
+
+export async function fetchUsageSummary(): Promise<UsageSummary> {
+  const response = await fetch(`${API_BASE}/api/usage/summary`);
+  const payload = await parseJsonOrThrow(response, "读取 Token 统计失败。");
+  return payload.summary;
+}
+
+export async function fetchUsageTasks(): Promise<UsageTaskDetail[]> {
+  const response = await fetch(`${API_BASE}/api/usage/tasks`);
+  const payload = await parseJsonOrThrow(response, "读取任务统计失败。");
+  return payload.tasks;
+}
+
+export async function fetchUsageTask(taskId: string): Promise<UsageTaskDetail> {
+  const response = await fetch(`${API_BASE}/api/usage/tasks/${taskId}`);
+  const payload = await parseJsonOrThrow(response, "读取任务明细失败。");
+  return payload.task;
+}
+
+export function makeUsageExportUrl(kind: "csv" | "json"): string {
+  return `${API_BASE}/api/usage/export.${kind}`;
+}
+
+export async function clearUsage(): Promise<void> {
+  const response = await fetch(`${API_BASE}/api/usage`, { method: "DELETE" });
+  await parseJsonOrThrow(response, "清空统计失败。");
 }

@@ -17,7 +17,7 @@ from tkinter import BOTH, END, LEFT, RIGHT, Button, Frame, Label, StringVar, Tex
 
 
 APP_NAME = "PPT Agent"
-APP_VERSION = "v0.1.0"
+APP_VERSION = "v0.2.0-dev"
 BACKEND_URL = "http://127.0.0.1:8000"
 FRONTEND_DEV_URL = "http://127.0.0.1:5173"
 

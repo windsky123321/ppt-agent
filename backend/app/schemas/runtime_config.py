@@ -22,6 +22,12 @@ class RuntimeModelConfig(BaseModel):
     revision_max_output_tokens: int = 1200
     normal_max_output_tokens: int = 4000
     output_dir: str = "storage/decks"
+    skills_enabled: bool = True
+    auto_select_skills: bool = True
+    max_skills_per_task: int = 3
+    max_skill_context_tokens: int = 800
+    allow_skill_scripts: bool = False
+    allowed_skill_risk_level: str = "low"
 
 
 class RuntimeModelConfigView(BaseModel):
@@ -45,6 +51,12 @@ class RuntimeModelConfigView(BaseModel):
     revision_max_output_tokens: int
     normal_max_output_tokens: int
     output_dir: str
+    skills_enabled: bool
+    auto_select_skills: bool
+    max_skills_per_task: int
+    max_skill_context_tokens: int
+    allow_skill_scripts: bool
+    allowed_skill_risk_level: str
 
 
 class ModelTestResponse(BaseModel):

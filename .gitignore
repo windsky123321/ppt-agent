@@ -10,13 +10,6 @@ build/
 release/
 coverage/
 .DS_Store
-logs/
-outputs/
-temp/
-uploads/
-*.log
-__pycache__/
-*.py[cod]
 /storage/
 /backend/storage/
 !backend/app/storage/
@@ -25,8 +18,15 @@ backend/app/storage/__pycache__/
 backend/app/storage/**/*.pyc
 *.pptx
 *.pdf
-*.exe
 .env
 frontend/.vite/
+logs/
+outputs/
+temp/
+uploads/
+*.exe
 frontend/dist/
 frontend/tsconfig.tsbuildinfo
+/skills/
+/usage/
+/ppt agent/

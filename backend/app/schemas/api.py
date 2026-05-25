@@ -7,6 +7,8 @@ from app.schemas.paper import ParsedPaper
 from app.schemas.prompt_template import PromptTemplate
 from app.schemas.profile import CreateProfileRequest, UserProfile
 from app.schemas.runtime_config import ModelTestResponse, RuntimeModelConfig, RuntimeModelConfigView
+from app.schemas.skill_library import SkillImportResponse, SkillManifest, SkillSearchResponse, SkillTestResponse
+from app.schemas.usage import UsageSummary, UsageTaskDetail, UsageTasksResponse
 
 
 class UploadResponse(BaseModel):
@@ -51,3 +53,15 @@ class ProfilesResponse(BaseModel):
 
 class PromptTemplatesResponse(BaseModel):
     templates: list[PromptTemplate]
+
+
+class SkillsResponse(BaseModel):
+    skills: list[SkillManifest]
+
+
+class UsageSummaryResponse(BaseModel):
+    summary: UsageSummary
+
+
+class UsageTaskResponse(BaseModel):
+    task: UsageTaskDetail

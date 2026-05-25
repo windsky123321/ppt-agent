@@ -1,18 +1,28 @@
 import { useEffect, useState } from "react";
 
 import {
+  clearUsage,
+  deleteSkill,
+  disableSkill,
+  enableSkill,
   fetchArtifacts,
   fetchHealth,
   fetchJsonArtifact,
   fetchProfiles,
   fetchPromptTemplates,
+  fetchSkills,
+  fetchUsageSummary,
+  fetchUsageTasks,
   getModelConfig,
+  importSkill,
   parseInstruction,
   regenerateSlides,
   saveModelConfig,
   saveProfile,
   savePromptTemplate,
+  searchSkills,
   testModelConfig,
+  testSkill,
   uploadPaper,
 } from "../api/client";
 import { ArtifactsPanel } from "../components/ArtifactsPanel";
@@ -22,13 +32,15 @@ import { OutlinePreview } from "../components/OutlinePreview";
 import { ProfilePanel } from "../components/ProfilePanel";
 import { RegeneratePanel } from "../components/RegeneratePanel";
 import { SettingsPanel } from "../components/SettingsPanel";
+import { SkillLibraryPanel } from "../components/SkillLibraryPanel";
 import { StatusPanel } from "../components/StatusPanel";
+import { TokenUsagePanel } from "../components/TokenUsagePanel";
 import { UploadPanel } from "../components/UploadPanel";
 import { WarningsPanel } from "../components/WarningsPanel";
 import { useAppState } from "../stores/useAppState";
 import type { CriticReport, GroundingReport, PromptTemplate, RuntimeModelConfig, RuntimeModelConfigView, UserProfile } from "../types";
 
-type TabKey = "workspace" | "model" | "output" | "logs" | "about";
+type TabKey = "workspace" | "model" | "skills" | "usage" | "output" | "logs" | "about";
 
 function createPromptTemplateFromInstruction(content: string): PromptTemplate {
   const now = new Date().toISOString();
@@ -65,6 +77,12 @@ function mockPreset(): RuntimeModelConfig {
     revision_max_output_tokens: 1200,
     normal_max_output_tokens: 4000,
     output_dir: "storage/decks",
+    skills_enabled: true,
+    auto_select_skills: true,
+    max_skills_per_task: 3,
+    max_skill_context_tokens: 800,
+    allow_skill_scripts: false,
+    allowed_skill_risk_level: "low",
   };
 }
 
@@ -90,6 +108,12 @@ function viewToConfig(view: RuntimeModelConfigView): RuntimeModelConfig {
     revision_max_output_tokens: view.revision_max_output_tokens,
     normal_max_output_tokens: view.normal_max_output_tokens,
     output_dir: view.output_dir,
+    skills_enabled: view.skills_enabled,
+    auto_select_skills: view.auto_select_skills,
+    max_skills_per_task: view.max_skills_per_task,
+    max_skill_context_tokens: view.max_skill_context_tokens,
+    allow_skill_scripts: view.allow_skill_scripts,
+    allowed_skill_risk_level: view.allowed_skill_risk_level,
   };
 }
 
@@ -102,8 +126,16 @@ export function App() {
   const [activeTab, setActiveTab] = useState<TabKey>("workspace");
 
   useEffect(() => {
-    Promise.allSettled([fetchHealth(), fetchProfiles(), fetchPromptTemplates(), getModelConfig()]).then((results) => {
-      const [healthResult, profilesResult, templatesResult, modelResult] = results;
+    Promise.allSettled([
+      fetchHealth(),
+      fetchProfiles(),
+      fetchPromptTemplates(),
+      getModelConfig(),
+      fetchSkills(),
+      fetchUsageSummary(),
+      fetchUsageTasks(),
+    ]).then((results) => {
+      const [healthResult, profilesResult, templatesResult, modelResult, skillsResult, usageSummaryResult, usageTasksResult] = results;
 
       if (healthResult.status === "fulfilled") {
         state.setBackendConnected(true);
@@ -128,6 +160,18 @@ export function App() {
         state.setModelConfigView(modelResult.value);
         state.setModelConfig(viewToConfig(modelResult.value));
       }
+
+      if (skillsResult.status === "fulfilled") {
+        state.setSkills(skillsResult.value);
+      }
+
+      if (usageSummaryResult.status === "fulfilled") {
+        state.setUsageSummary(usageSummaryResult.value);
+      }
+
+      if (usageTasksResult.status === "fulfilled") {
+        state.setUsageTasks(usageTasksResult.value);
+      }
     });
   }, []);
 
@@ -142,9 +186,19 @@ export function App() {
     state.setGroundingReport(groundingReport);
   }
 
+  async function refreshUsage() {
+    const [summary, tasks] = await Promise.all([fetchUsageSummary(), fetchUsageTasks()]);
+    state.setUsageSummary(summary);
+    state.setUsageTasks(tasks);
+  }
+
+  async function refreshSkills() {
+    state.setSkills(await fetchSkills());
+  }
+
   async function handleGenerate() {
     if (!state.backendConnected) {
-      state.setError("后端未连接，请确认 PPT-Agent.exe 已启动，或查看 launcher 日志。");
+      state.setError("后端未连接，请先启动 PPT-Agent.exe。");
       return;
     }
     if (!state.selectedFile) {
@@ -152,7 +206,7 @@ export function App() {
       return;
     }
     if (!apiKeyReady) {
-      state.setError("当前未配置可用模型。请前往“模型配置”填写 API Key，或切换到 Mock 模式后重试。");
+      state.setError("当前未配置可用模型。请前往“模型配置”填写 API Key，或切换到 Mock 模式。");
       return;
     }
 
@@ -161,10 +215,10 @@ export function App() {
     try {
       const result = await uploadPaper(state.selectedFile, state.settings, state.activeProfileId || undefined, state.deckMode);
       state.setResult(result);
-      await refreshArtifacts(result.job.deck_id);
+      await Promise.all([refreshArtifacts(result.job.deck_id), refreshUsage()]);
       state.setModelStatus(`生成完成：${result.job.deck_id}`);
     } catch (error) {
-      state.setError(error instanceof Error ? error.message : "生成失败。请查看日志后重试。");
+      state.setError(error instanceof Error ? error.message : "生成失败，请查看日志后重试。");
     } finally {
       state.setLoading(false);
     }
@@ -197,7 +251,7 @@ export function App() {
         state.regenLongInstruction,
       );
       state.setResult((current) => (current ? { ...current, job: response.job } : current));
-      await refreshArtifacts(state.result.job.deck_id);
+      await Promise.all([refreshArtifacts(state.result.job.deck_id), refreshUsage()]);
     } catch (error) {
       state.setError(error instanceof Error ? error.message : "单页精修失败。");
     } finally {
@@ -248,10 +302,98 @@ export function App() {
     }
     try {
       await savePromptTemplate(createPromptTemplateFromInstruction(state.settings.long_instruction));
-      const templates = await fetchPromptTemplates();
-      state.setPromptTemplates(templates);
+      state.setPromptTemplates(await fetchPromptTemplates());
     } catch (error) {
       state.setError(error instanceof Error ? error.message : "保存需求模板失败。");
+    }
+  }
+
+  async function handleSearchSkills(keyword: string) {
+    try {
+      const results = await searchSkills({ keyword, tags: [], capabilities: [] });
+      state.setSkillSearchResults(results);
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "搜索技能失败。");
+    }
+  }
+
+  async function handleImportZip(file: File) {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await importSkill(formData);
+      await refreshSkills();
+      state.setModelStatus(`技能已导入：${result.skill.name}`);
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "导入技能失败。");
+    }
+  }
+
+  async function handleImportFolder(folderPath: string) {
+    try {
+      const formData = new FormData();
+      formData.append("folder_path", folderPath);
+      const result = await importSkill(formData);
+      await refreshSkills();
+      state.setModelStatus(`技能已导入：${result.skill.name}`);
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "导入技能失败。");
+    }
+  }
+
+  async function handleImportUrl(url: string) {
+    try {
+      const formData = new FormData();
+      if (url.includes("github.com")) {
+        formData.append("github_repo", url);
+      } else {
+        formData.append("source_url", url);
+      }
+      const result = await importSkill(formData);
+      await refreshSkills();
+      state.setModelStatus(`技能已导入：${result.skill.name}`);
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "导入技能失败。");
+    }
+  }
+
+  async function handleToggleSkill(skillId: string, enabled: boolean) {
+    try {
+      if (enabled) {
+        await disableSkill(skillId);
+      } else {
+        await enableSkill(skillId);
+      }
+      await refreshSkills();
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "更新技能状态失败。");
+    }
+  }
+
+  async function handleDeleteSkill(skillId: string) {
+    try {
+      await deleteSkill(skillId);
+      await refreshSkills();
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "删除技能失败。");
+    }
+  }
+
+  async function handleTestSkill(skillId: string) {
+    try {
+      const result = await testSkill(skillId);
+      state.setModelStatus(result.message);
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "测试技能失败。");
+    }
+  }
+
+  async function handleClearUsage() {
+    try {
+      await clearUsage();
+      await refreshUsage();
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "清空统计失败。");
     }
   }
 
@@ -260,7 +402,7 @@ export function App() {
   const apiKeyReady = !llmNeedsKey || Boolean(state.modelConfig.llm_api_key.trim() || hasSavedMaskedKey(state.modelConfigView?.llm_api_key_masked));
   const canGenerate = state.backendConnected && Boolean(state.selectedFile) && apiKeyReady && !state.loading;
   const generateHint = !state.backendConnected
-    ? "请先双击运行 PPT-Agent.exe，确认浏览器已自动打开。"
+    ? "请先双击运行 PPT-Agent.exe，并确认浏览器已自动打开。"
     : !apiKeyReady
       ? "第一步：去“模型配置”填写 API Key；如果只是验收流程，可直接切换到 Mock 模式。"
       : !state.selectedFile
@@ -273,8 +415,8 @@ export function App() {
         <header className="mb-5 border-b border-slate-200 pb-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold tracking-normal">PPT 智能体</h1>
-              <p className="mt-1 text-sm text-slate-600">上传论文 PDF，生成可编辑的专业中文或双语汇报 PPT。</p>
+              <h1 className="text-2xl font-semibold tracking-normal">PPT Agent v0.2.0-dev</h1>
+              <p className="mt-1 text-sm text-slate-600">上传 PDF，生成可编辑 PPT，并管理技能库与 Token 统计。</p>
             </div>
             <div className="rounded-md bg-white px-3 py-2 text-sm text-slate-700 shadow-sm">
               {state.backendConnected ? "服务已连接" : "服务未连接"}
@@ -283,6 +425,8 @@ export function App() {
           <nav className="mt-4 flex flex-wrap gap-2">
             <TabButton active={activeTab === "workspace"} onClick={() => setActiveTab("workspace")} label="工作台" />
             <TabButton active={activeTab === "model"} onClick={() => setActiveTab("model")} label="模型配置" />
+            <TabButton active={activeTab === "skills"} onClick={() => setActiveTab("skills")} label="技能库" />
+            <TabButton active={activeTab === "usage"} onClick={() => setActiveTab("usage")} label="Token 使用详情" />
             <TabButton active={activeTab === "output"} onClick={() => setActiveTab("output")} label="输出目录" />
             <TabButton active={activeTab === "logs"} onClick={() => setActiveTab("logs")} label="日志" />
             <TabButton active={activeTab === "about"} onClick={() => setActiveTab("about")} label="关于" />
@@ -385,6 +529,23 @@ export function App() {
           />
         ) : null}
 
+        {activeTab === "skills" ? (
+          <SkillLibraryPanel
+            installedSkills={state.skills}
+            searchResults={state.skillSearchResults}
+            onSearch={handleSearchSkills}
+            onImportZip={handleImportZip}
+            onImportFolder={handleImportFolder}
+            onImportUrl={handleImportUrl}
+            onEnable={(skillId) => handleToggleSkill(skillId, false)}
+            onDisable={(skillId) => handleToggleSkill(skillId, true)}
+            onDelete={handleDeleteSkill}
+            onTest={handleTestSkill}
+          />
+        ) : null}
+
+        {activeTab === "usage" ? <TokenUsagePanel summary={state.usageSummary} tasks={state.usageTasks} onRefresh={refreshUsage} onClear={handleClearUsage} /> : null}
+
         {activeTab === "output" ? (
           <InfoPanel
             title="输出目录"
@@ -392,7 +553,7 @@ export function App() {
               "默认输出目录：storage/decks",
               `当前配置：${state.modelConfig.output_dir}`,
               "每次生成都会保存 PPTX 和中间 JSON。",
-              "如果你找不到结果，请先查看右侧“生成结果”里的 final_deck.pptx 路径。",
+              "如果你找不到结果，请先查看右侧“生成结果”中的 final_deck.pptx 路径。",
             ]}
           />
         ) : null}
@@ -403,7 +564,7 @@ export function App() {
             rows={[
               "启动日志：logs/launcher.log",
               "后端日志：logs/backend.log",
-              "前端日志：logs/frontend.log",
+              "技能和 Token 统计会保存在本地目录，不会记录 API Key。",
               "如果启动或生成失败，请先查看 launcher.log 和 backend.log。",
             ]}
           />
@@ -413,10 +574,10 @@ export function App() {
           <InfoPanel
             title="关于"
             rows={[
-              "PPT 智能体 Windows 发布候选版",
+              "PPT Agent 当前开发版本：v0.2.0-dev",
               "默认启用 High-Quality Low-Token Mode",
               "默认模型：gpt-5.5；fallback：gpt-4.1-mini",
-              "Mock 模式无需 API Key，可用于首轮验收和回归测试",
+              "技能库默认不执行脚本，Token 统计默认不记录敏感内容。",
             ]}
           />
         ) : null}

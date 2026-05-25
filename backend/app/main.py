@@ -11,7 +11,7 @@ from app.config import get_settings
 
 settings = get_settings()
 
-app = FastAPI(title="Personalized Paper-to-PPT Agent", version="0.1.0")
+app = FastAPI(title="PPT Agent", version="v0.2.0-dev")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

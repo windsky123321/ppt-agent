@@ -56,6 +56,10 @@ def test_windows_product_files_exist():
         "VERSION",
         "README.md",
         "RELEASE_NOTES.md",
+        "SKILL_LIBRARY.md",
+        "TOKEN_USAGE.md",
+        "PRIVACY.md",
+        "SECURITY.md",
         "WINDOWS_QUICKSTART.md",
         "TROUBLESHOOTING.md",
         "start_windows.bat",
@@ -285,4 +289,6 @@ def test_ci_build_script_has_balanced_braces():
 
 def test_version_file_is_v010():
     version_text = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    assert version_text == "v0.1.0"
+    assert version_text == "v0.2.0-dev"
+    launcher_text = (ROOT / "desktop" / "launcher.py").read_text(encoding="utf-8")
+    assert 'APP_VERSION = "v0.2.0-dev"' in launcher_text

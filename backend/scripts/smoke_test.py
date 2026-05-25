@@ -7,6 +7,7 @@ if str(ROOT) not in sys.path:
 
 from app.agents.pipeline import PaperToPPTPipeline
 from app.schemas.common import GenerationSettings
+from app.storage.file_storage import FileStorage
 
 
 def main() -> None:
@@ -20,13 +21,7 @@ def main() -> None:
         original_filename=fixture.name,
         settings=GenerationSettings(),
     )
-    candidate_paths = [
-        ROOT / "storage" / "decks" / result.deck_id / "final_deck.pptx",
-        ROOT / "storage" / result.job_id / "final_deck.pptx",
-        Path("storage") / "decks" / result.deck_id / "final_deck.pptx",
-        Path("storage") / result.job_id / "final_deck.pptx",
-    ]
-    pptx_path = next((path for path in candidate_paths if path.exists()), candidate_paths[0])
+    pptx_path = FileStorage().get_artifact_path(result.job_id, "final_deck.pptx")
     if not pptx_path.exists():
         raise RuntimeError("Smoke test failed: final_deck.pptx was not created.")
     print(f"SMOKE_OK {pptx_path}")

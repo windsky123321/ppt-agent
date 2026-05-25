@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
@@ -8,16 +10,22 @@ from app.schemas.api import (
     ProfilesResponse,
     PromptTemplatesResponse,
     RegenerateSlideRequest,
+    SkillsResponse,
     UploadResponse,
+    UsageSummaryResponse,
+    UsageTaskResponse,
 )
 from app.schemas.common import GenerationSettings
 from app.schemas.instructions import LongInstructionInput
 from app.schemas.profile import CreateProfileRequest, UserProfile
 from app.schemas.prompt_template import PromptTemplate
 from app.schemas.runtime_config import ModelTestResponse, RuntimeModelConfig, RuntimeModelConfigView
+from app.schemas.skill_library import SkillImportResponse, SkillSearchRequest, SkillSearchResponse, SkillTestResponse
 from app.storage.config_storage import ConfigStorage
 from app.storage.file_storage import FileStorage
 from app.storage.profile_storage import ProfileStorage
+from app.storage.skill_storage import SkillStorage
+from app.storage.usage_storage import UsageStorage
 from app.utils.profile_utils import build_inline_profile, profile_to_settings
 
 router = APIRouter(prefix="/api")
@@ -25,6 +33,8 @@ pipeline = PaperToPPTPipeline()
 storage = FileStorage()
 profile_storage = ProfileStorage()
 config_storage = ConfigStorage()
+skill_storage = SkillStorage()
+usage_storage = UsageStorage()
 instruction_parser = InstructionParserAgent()
 
 
@@ -34,7 +44,7 @@ def health() -> HealthResponse:
     return HealthResponse(
         status="ok",
         backend="running",
-        version="0.3.0",
+        version="v0.2.0-dev",
         storage_dir=str(storage.settings.storage_path),
         llm_configured=runtime_config.llm_provider == "mock" or bool(runtime_config.llm_api_key),
         vision_configured=(not runtime_config.enable_vision)
@@ -84,7 +94,9 @@ async def upload_paper(
 
     if long_instruction:
         try:
-            parsed_instruction = instruction_parser.run(LongInstructionInput(raw_text=long_instruction, language_hint=language))
+            parsed_instruction = instruction_parser.run(
+                LongInstructionInput(raw_text=long_instruction, language_hint=language)
+            )
         except Exception as exc:
             raise HTTPException(status_code=400, detail=f"长需求解析失败：{exc}") from exc
 
@@ -231,6 +243,12 @@ def get_model_config() -> RuntimeModelConfigView:
         revision_max_output_tokens=config.revision_max_output_tokens,
         normal_max_output_tokens=config.normal_max_output_tokens,
         output_dir=config.output_dir,
+        skills_enabled=config.skills_enabled,
+        auto_select_skills=config.auto_select_skills,
+        max_skills_per_task=config.max_skills_per_task,
+        max_skill_context_tokens=config.max_skill_context_tokens,
+        allow_skill_scripts=config.allow_skill_scripts,
+        allowed_skill_risk_level=config.allowed_skill_risk_level,
     )
 
 
@@ -254,17 +272,15 @@ def test_model_config(payload: RuntimeModelConfig) -> ModelTestResponse:
     fallback_note = ""
     if payload.llm_model == "gpt-5.5":
         fallback_note = f" 若当前运行时不支持 gpt-5.5，将回退到 {payload.fallback_llm_model}。"
+    has_llm = bool(payload.llm_base_url and payload.llm_model)
+    has_vision = (not payload.enable_vision) or payload.vision_provider == "mock" or bool(
+        payload.vision_base_url and payload.vision_model
+    )
     return ModelTestResponse(
-        success=bool(payload.llm_base_url and payload.llm_model),
-        message=(
-            f"模型配置已保存，基础字段看起来有效。{fallback_note}"
-            if payload.llm_base_url and payload.llm_model
-            else "模型配置缺少 base URL 或 model。"
-        ),
-        llm_ok=bool(payload.llm_base_url and payload.llm_model),
-        vision_ok=(not payload.enable_vision)
-        or payload.vision_provider == "mock"
-        or bool(payload.vision_base_url and payload.vision_model),
+        success=has_llm,
+        message=f"模型配置已保存，基础字段看起来有效。{fallback_note}" if has_llm else "模型配置缺少 base URL 或 model。",
+        llm_ok=has_llm,
+        vision_ok=has_vision,
     )
 
 
@@ -293,6 +309,131 @@ def update_prompt_template(template_id: str, payload: PromptTemplate) -> PromptT
 def delete_prompt_template(template_id: str):
     config_storage.delete_prompt_template(template_id)
     return {"deleted": True, "template_id": template_id}
+
+
+@router.get("/skills", response_model=SkillsResponse)
+def list_skills() -> SkillsResponse:
+    return SkillsResponse(skills=skill_storage.list_skills())
+
+
+@router.get("/skills/{skill_id}")
+def get_skill(skill_id: str):
+    try:
+        return skill_storage.get_skill(skill_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="未找到该技能。") from exc
+
+
+@router.post("/skills/search", response_model=SkillSearchResponse)
+def search_skills(payload: SkillSearchRequest):
+    from app.skills.search import MockSkillSearchProvider
+
+    results = MockSkillSearchProvider().search(payload)
+    return SkillSearchResponse(query=payload, results=results)
+
+
+@router.post("/skills/import", response_model=SkillImportResponse)
+async def import_skill(
+    file: UploadFile | None = File(default=None),
+    folder_path: str = Form(default=""),
+    source_url: str = Form(default=""),
+    github_repo: str = Form(default=""),
+    preview_only: bool = Form(default=False),
+    allow_overwrite: bool = Form(default=False),
+):
+    try:
+        if file is not None:
+            import tempfile
+
+            suffix = Path(file.filename or "skill.zip").suffix or ".zip"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as handle:
+                handle.write(await file.read())
+                temp_path = Path(handle.name)
+            return skill_storage.import_from_zip(
+                temp_path, allow_overwrite=allow_overwrite, preview_only=preview_only
+            )
+        if folder_path.strip():
+            return skill_storage.import_from_folder(
+                Path(folder_path.strip()),
+                source="folder",
+                allow_overwrite=allow_overwrite,
+                preview_only=preview_only,
+            )
+        if source_url.strip():
+            return skill_storage.import_from_url(source_url.strip(), preview_only=preview_only)
+        if github_repo.strip():
+            return skill_storage.import_from_url(github_repo.strip(), preview_only=preview_only)
+        raise HTTPException(status_code=400, detail="请提供 zip、文件夹路径、URL 或 GitHub 仓库地址。")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"技能导入失败：{exc}") from exc
+
+
+@router.post("/skills/{skill_id}/enable")
+def enable_skill(skill_id: str):
+    try:
+        return skill_storage.enable_skill(skill_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="未找到该技能。") from exc
+
+
+@router.post("/skills/{skill_id}/disable")
+def disable_skill(skill_id: str):
+    try:
+        return skill_storage.disable_skill(skill_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="未找到该技能。") from exc
+
+
+@router.delete("/skills/{skill_id}")
+def delete_skill(skill_id: str):
+    skill_storage.delete_skill(skill_id)
+    return {"deleted": True, "skill_id": skill_id}
+
+
+@router.post("/skills/{skill_id}/test", response_model=SkillTestResponse)
+def test_skill(skill_id: str):
+    try:
+        return skill_storage.test_skill(skill_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="未找到该技能。") from exc
+
+
+@router.get("/usage/summary", response_model=UsageSummaryResponse)
+def get_usage_summary() -> UsageSummaryResponse:
+    return UsageSummaryResponse(summary=usage_storage.summary())
+
+
+@router.get("/usage/tasks")
+def get_usage_tasks():
+    return {"tasks": [task.model_dump() for task in usage_storage.tasks()]}
+
+
+@router.get("/usage/tasks/{task_id}", response_model=UsageTaskResponse)
+def get_usage_task(task_id: str) -> UsageTaskResponse:
+    try:
+        return UsageTaskResponse(task=usage_storage.task_detail(task_id))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="未找到该任务的 Token 统计。") from exc
+
+
+@router.get("/usage/export.csv")
+def export_usage_csv():
+    path = usage_storage.export_csv(usage_storage.root / "usage_export.csv")
+    return FileResponse(path=path, filename=path.name, media_type="text/csv")
+
+
+@router.get("/usage/export.json")
+def export_usage_json():
+    path = usage_storage.export_json(usage_storage.root / "usage_export.json")
+    return FileResponse(path=path, filename=path.name, media_type="application/json")
+
+
+@router.delete("/usage")
+def clear_usage():
+    usage_storage.clear()
+    return {"deleted": True}
 
 
 def _mask_key(value: str) -> str:

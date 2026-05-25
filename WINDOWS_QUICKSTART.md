@@ -1,68 +1,60 @@
-# Windows 快速开始 v0.1.0
+# Windows 快速开始 v0.2.0-dev
 
-## 下载
+## 稳定版与开发版
 
-推荐从 GitHub Release 下载正式发布包：
+- 稳定发布：`v0.1.0`
+- 当前开发：`v0.2.0-dev`
 
-1. 打开 GitHub Release 页面
-2. 下载 `PPT-Agent-Windows-v0.1.0.zip`
-3. 解压后进入 `PPT-Agent-Windows-v0.1.0/`
+如果你要测试当前开发分支，请优先下载 GitHub Actions artifact。
 
-如果你是在验证构建流程，也可以从 GitHub Actions 下载：
+## 开发版下载
 
-- workflow：`Build Windows EXE`
-- artifact：`PPT-Agent-Windows-Release`
-
-## 运行
-
-1. 双击 `PPT-Agent.exe`
-2. 如果 Windows 阻止运行，点击“更多信息” -> “仍要运行”
-3. 等待浏览器自动打开
+1. 打开 GitHub Actions
+2. 进入 `Build Windows EXE`
+3. 下载 artifact：`PPT-Agent-Windows-Release`
+4. 解压
+5. 双击 `PPT-Agent.exe`
 
 ## 第一次启动
 
-如果本机还没有 `.env`：
+1. 等待浏览器自动打开
+2. 打开“模型配置”
+3. 填写 API Key，或切换到 Mock 模式
+4. 返回工作台上传 PDF
+5. 点击“生成 PPT”
 
-- 启动器会基于 `.env.example` 自动创建
-- 不会覆盖已有 `.env`
+## 技能库
 
-建议按以下顺序操作：
+打开“技能库”标签页后，可以：
 
-1. 打开“模型配置”
-2. 填写 API Key，或切换到 Mock 模式
-3. 返回工作台上传 PDF
-4. 点击“生成 PPT”
-5. 在“生成结果”区域下载 `final_deck.pptx`
+- 搜索技能
+- 从本地 zip 导入
+- 从本地文件夹导入
+- 从 URL 导入安全占位技能
+- 启用或禁用技能
 
-## Mock 模式
+注意：
 
-如果暂时没有 API Key：
+- 外部技能默认不执行脚本
+- 外部技能默认不读取用户文件
+- 高风险技能应保持禁用
 
-1. 进入“模型配置”
-2. 点击“切换到 Mock 模式”
-3. 保存配置
-4. 上传测试 PDF 验证完整流程
+## Token 使用详情
 
-## API Key 说明
+打开“Token 使用详情”标签页后，可以：
 
-- API Key 不会写入 EXE
-- API Key 不会写入 GitHub Release zip
-- API Key 不会写入 GitHub Actions artifact
-- API Key 不会写入示例配置
-- 真实 Key 仅保存在本机运行时配置中
+- 查看总 Token
+- 查看本次任务
+- 导出 CSV
+- 导出 JSON
+- 清空本地统计
 
-## 日志与输出
+## 查看日志
 
 - 启动日志：`logs/launcher.log`
 - 后端日志：`logs/backend.log`
-- 生成结果：网页中的“生成结果”区域
-- 输出目录：可在网页中直接打开
 
-## 常见问题
+## 查看本地数据目录
 
-- Windows 阻止运行
-- API Key 未配置
-- 端口被占用
-- 生成失败
-- 找不到下载文件
-- 杀毒软件误报
+- 技能目录：`skills/` 或 `%LOCALAPPDATA%/PPT Agent/skills/`
+- Token 统计：`usage/` 或 `%LOCALAPPDATA%/PPT Agent/usage/`

@@ -1,57 +1,36 @@
-# PPT Agent Windows v0.1.0
+# RELEASE NOTES
 
-## 版本信息
+## v0.2.0-dev
 
-- 版本：`v0.1.0`
-- 发布名称：`PPT Agent Windows v0.1.0`
-- 发布时间：`2026-05-24`
+当前分支进入功能开发阶段，重点是：
 
-## 主要功能
+- 技能扩展能力
+- Token 成本透明化
 
-- PDF 转 PPT
+### 新增
+
+- 技能库本地目录与注册表
+- mock 技能搜索 provider
+- 本地 zip / 文件夹 / URL 占位导入
+- 风险扫描与默认禁用策略
+- Skill Router 静态建议注入
+- Token 使用详情 API
+- Token 使用详情前端面板
+
+### 安全约束
+
+- 外部技能默认不执行脚本
+- 外部技能默认不读取用户文件
+- 外部技能默认不联网
+- 外部技能默认不获得 API Key
+- Token 统计不记录完整 prompt、PDF 全文或 API Key
+
+## v0.1.0
+
+稳定 Windows 预发布版已完成：
+
+- Windows EXE 构建
 - 中文 Web UI
-- Windows 双击启动
-- Mock 模式测试
 - Low Token Mode
 - Round 2 修改
 - Round 3 精修
-- 输出目录管理
-- 日志查看
-- GitHub Actions 自动构建 Windows EXE
-
-## 使用方式
-
-1. 打开 GitHub Release 页面
-2. 下载 `PPT-Agent-Windows-v0.1.0.zip`
-3. 解压后进入 `PPT-Agent-Windows-v0.1.0/`
-4. 双击 `PPT-Agent.exe`
-5. 如果 Windows 阻止运行，点击“更多信息” -> “仍要运行”
-6. 第一次使用填写 API Key，或切换到 Mock 模式
-7. 上传 PDF
-8. 点击“生成 PPT”
-9. 在“生成结果”区域下载 `final_deck.pptx`
-
-## 已知限制
-
-- 首次真实生成需要配置 OpenAI API Key
-- Windows 可能提示未知发布者
-- 当前 EXE 未做代码签名
-- 杀毒软件可能误报
-- 真实生成质量依赖 PDF 内容和模型能力
-
-## 常见问题
-
-- Windows 阻止运行
-- API Key 未配置
-- 端口被占用
-- 生成失败
-- 找不到下载文件
-- 杀毒软件误报
-
-## 安全说明
-
-- API Key 不会打包进 EXE
-- `.env` 不会上传到 GitHub Release
-- 用户 PDF 和生成 PPT 不会包含在发布包中
-- `logs/`、`outputs/`、`uploads/`、`temp/` 不会包含在发布包中
-- 日志不会记录 API Key

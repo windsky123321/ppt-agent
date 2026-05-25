@@ -18,5 +18,11 @@
   "patch_mode": true,
   "revision_max_output_tokens": 1200,
   "normal_max_output_tokens": 4000,
-  "output_dir": "D:/Reports/PPT"
+  "output_dir": "D:/Reports/PPT",
+  "skills_enabled": true,
+  "auto_select_skills": true,
+  "max_skills_per_task": 3,
+  "max_skill_context_tokens": 800,
+  "allow_skill_scripts": false,
+  "allowed_skill_risk_level": "low"
 }

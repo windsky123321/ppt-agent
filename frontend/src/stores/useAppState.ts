@@ -10,7 +10,11 @@ import type {
   PromptTemplate,
   RuntimeModelConfig,
   RuntimeModelConfigView,
+  SkillManifest,
+  SkillSearchResult,
   UploadResponse,
+  UsageSummary,
+  UsageTaskDetail,
   UserProfile,
 } from "../types";
 
@@ -52,6 +56,12 @@ const defaultModelConfig: RuntimeModelConfig = {
   revision_max_output_tokens: 1200,
   normal_max_output_tokens: 4000,
   output_dir: "storage/decks",
+  skills_enabled: true,
+  auto_select_skills: true,
+  max_skills_per_task: 3,
+  max_skill_context_tokens: 800,
+  allow_skill_scripts: false,
+  allowed_skill_risk_level: "low",
 };
 
 export function useAppState() {
@@ -78,6 +88,10 @@ export function useAppState() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [skills, setSkills] = useState<SkillManifest[]>([]);
+  const [skillSearchResults, setSkillSearchResults] = useState<SkillSearchResult[]>([]);
+  const [usageSummary, setUsageSummary] = useState<UsageSummary | null>(null);
+  const [usageTasks, setUsageTasks] = useState<UsageTaskDetail[]>([]);
 
   return {
     settings,
@@ -126,5 +140,13 @@ export function useAppState() {
     setLoading,
     error,
     setError,
+    skills,
+    setSkills,
+    skillSearchResults,
+    setSkillSearchResults,
+    usageSummary,
+    setUsageSummary,
+    usageTasks,
+    setUsageTasks,
   };
 }

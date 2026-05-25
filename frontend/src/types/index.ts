@@ -24,6 +24,106 @@ export type HealthStatus = {
   vision_configured: boolean;
 };
 
+export type SkillManifest = {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  source: string;
+  author: string;
+  homepage: string;
+  license: string;
+  tags: string[];
+  capabilities: string[];
+  entrypoints: string[];
+  enabled: boolean;
+  trusted: boolean;
+  risk_level: "low" | "medium" | "high" | "unknown";
+  installed_at: string;
+  last_used_at: string;
+  checksum: string;
+  suggestions: string[];
+  templates: string[];
+  constraints: string[];
+};
+
+export type SkillSearchRequest = {
+  keyword: string;
+  tags: string[];
+  capabilities: string[];
+};
+
+export type SkillSearchResult = {
+  id: string;
+  name: string;
+  description: string;
+  source: string;
+  author: string;
+  updated_at: string;
+  license: string;
+  tags: string[];
+  capabilities: string[];
+  risk_level: "low" | "medium" | "high" | "unknown";
+  preview_url: string;
+  installable: boolean;
+};
+
+export type SkillImportResponse = {
+  skill: SkillManifest;
+  warnings: string[];
+  preview_only: boolean;
+};
+
+export type SkillTestResponse = {
+  skill_id: string;
+  ok: boolean;
+  message: string;
+  suggestions: string[];
+  constraints: string[];
+};
+
+export type UsageRecord = {
+  task_id: string;
+  session_id: string;
+  created_at: string;
+  model: string;
+  fallback_model: string;
+  stage: string;
+  round: number;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  total_tokens: number | null;
+  cached_tokens: number | null;
+  reasoning_tokens: number | null;
+  estimated_cost: number | null;
+  request_count: number;
+  retry_count: number;
+  error_count: number;
+  duration_ms: number;
+  mode: "normal" | "revision" | "patch" | "mock";
+  slide_count: number;
+  output_file: string;
+  mock: boolean;
+  provider_usage_available: boolean;
+};
+
+export type UsageSummary = {
+  total_records: number;
+  total_prompt_tokens: number | null;
+  total_completion_tokens: number | null;
+  total_tokens: number | null;
+  total_request_count: number;
+  total_retry_count: number;
+  total_error_count: number;
+  total_estimated_cost: number | null;
+  unknown_usage_records: number;
+};
+
+export type UsageTaskDetail = {
+  task_id: string;
+  records: UsageRecord[];
+};
+
 export type UserProfile = {
   id: string;
   name: string;
@@ -138,6 +238,12 @@ export type RuntimeModelConfigView = {
   revision_max_output_tokens: number;
   normal_max_output_tokens: number;
   output_dir: string;
+  skills_enabled: boolean;
+  auto_select_skills: boolean;
+  max_skills_per_task: number;
+  max_skill_context_tokens: number;
+  allow_skill_scripts: boolean;
+  allowed_skill_risk_level: string;
 };
 
 export type RuntimeModelConfig = {
@@ -161,6 +267,12 @@ export type RuntimeModelConfig = {
   revision_max_output_tokens: number;
   normal_max_output_tokens: number;
   output_dir: string;
+  skills_enabled: boolean;
+  auto_select_skills: boolean;
+  max_skills_per_task: number;
+  max_skill_context_tokens: number;
+  allow_skill_scripts: boolean;
+  allowed_skill_risk_level: string;
 };
 
 export type ParsedInstructionSpec = {
