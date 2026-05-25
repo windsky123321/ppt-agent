@@ -59,10 +59,13 @@ class FileStorage:
             "grounding_report.json",
             "critic_report.json",
             "repair_history.json",
+            "quality_report.json",
+            "quality_report.md",
             "user_instruction_raw.md",
             "user_instruction_spec.json",
             "merged_generation_config.json",
             "prompt_merge_report.json",
+            "draft_deck.pptx",
             "final_deck.pptx",
             "job_status.json",
         ]

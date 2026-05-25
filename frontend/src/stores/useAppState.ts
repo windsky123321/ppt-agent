@@ -19,7 +19,7 @@ import type {
 } from "../types";
 
 const defaultSettings: GenerationSettings = {
-  language: "en",
+  language: "zh",
   audience: "graduate",
   slide_count: 10,
   include_speaker_notes: true,
@@ -77,7 +77,7 @@ export function useAppState() {
   const [regenInstruction, setRegenInstruction] = useState("");
   const [regenLongInstruction, setRegenLongInstruction] = useState("");
   const [regenSlideId, setRegenSlideId] = useState("slide_02");
-  const [deckMode, setDeckMode] = useState("Reading Group");
+  const [deckMode, setDeckMode] = useState("reading_group");
   const [modelConfig, setModelConfig] = useState<RuntimeModelConfig>(defaultModelConfig);
   const [modelConfigView, setModelConfigView] = useState<RuntimeModelConfigView | null>(null);
   const [modelStatus, setModelStatus] = useState("");

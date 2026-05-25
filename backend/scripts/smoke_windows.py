@@ -53,18 +53,21 @@ def main() -> None:
     with fixture.open("rb") as handle:
         upload = client.post(
             "/api/papers/upload",
-            data={"profile_id": profile_id, "deck_mode": "Reading Group", "long_instruction": long_instruction},
+            data={"profile_id": profile_id, "deck_mode": "reading_group", "long_instruction": long_instruction},
             files={"file": ("sample_paper.pdf", handle, "application/pdf")},
         )
     assert upload.status_code == 200, upload.text
-    deck_id = upload.json()["job"]["deck_id"]
+    upload_payload = upload.json()
+    deck_id = upload_payload["job"]["deck_id"]
     artifacts = client.get(f"/api/decks/{deck_id}/artifacts")
     assert artifacts.status_code == 200
-    artifact_names = {item["name"] for item in artifacts.json()["artifacts"] if item["exists"]}
+    artifact_payload = artifacts.json()
+    artifact_names = {item["name"] for item in artifact_payload["artifacts"] if item["exists"]}
     assert "user_instruction_raw.md" in artifact_names
     assert "user_instruction_spec.json" in artifact_names
     assert "merged_generation_config.json" in artifact_names
-    assert "final_deck.pptx" in artifact_names
+    assert artifact_payload["download_artifact_name"] == "draft_deck.pptx"
+    assert "draft_deck.pptx" in artifact_names
 
     regen = client.post(
         f"/api/decks/{deck_id}/regenerate-slide",

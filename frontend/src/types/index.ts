@@ -165,6 +165,10 @@ export type JobStatus = {
   current_stage?: string;
   critic_approved?: boolean | null;
   grounding_warning_count?: number | null;
+  mock_mode?: boolean;
+  delivery_ready?: boolean;
+  quality_status?: string;
+  download_artifact_name?: string;
 };
 
 export type ParsedPaper = {
@@ -178,6 +182,7 @@ export type ParsedPaper = {
 export type UploadResponse = {
   job: JobStatus;
   parsed_paper: ParsedPaper;
+  paper_summary?: Record<string, unknown> | null;
   artifacts_url: string;
   download_url: string;
 };
@@ -186,6 +191,7 @@ export type GroundingWarning = {
   slide_id: string;
   severity: string;
   message: string;
+  zh_message?: string;
 };
 
 export type GroundingReport = {
@@ -198,6 +204,7 @@ export type CriticIssue = {
   severity: "low" | "medium" | "high";
   category: string;
   description: string;
+  zh_message?: string;
   suggested_fix: string;
   requires_regeneration: boolean;
 };
@@ -205,6 +212,7 @@ export type CriticIssue = {
 export type CriticReport = {
   deck_score: number;
   summary: string;
+  zh_summary?: string;
   issues: CriticIssue[];
   approved: boolean;
 };
@@ -213,6 +221,10 @@ export type ArtifactResponse = {
   deck_id: string;
   artifacts: ArtifactItem[];
   deck_status: string;
+  delivery_ready?: boolean;
+  mock_mode?: boolean;
+  quality_status?: string;
+  download_artifact_name?: string;
   grounding_status?: number | null;
   critic_approval_status?: boolean | null;
 };

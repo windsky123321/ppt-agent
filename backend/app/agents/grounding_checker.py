@@ -13,6 +13,7 @@ class GroundingChecker:
                             slide_id=slide.slide_id,
                             severity="high",
                             message="Content slide is missing source_refs.",
+                            zh_message="该内容页缺少来源页码。",
                         )
                     )
                 elif all((ref.section_title or "").lower() == "abstract" for ref in slide.source_refs):
@@ -21,6 +22,7 @@ class GroundingChecker:
                             slide_id=slide.slide_id,
                             severity="medium",
                             message="All source_refs point only to Abstract.",
+                            zh_message="该页来源仅指向摘要，依据不足。",
                         )
                     )
 
@@ -30,6 +32,7 @@ class GroundingChecker:
                         slide_id=slide.slide_id,
                         severity="high",
                         message=f"Unsupported claims flagged: {'; '.join(slide.unsupported_claims)}",
+                        zh_message="存在缺少原文支撑的结论，请减少主观推断。",
                     )
                 )
 

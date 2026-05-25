@@ -3,6 +3,7 @@ from pathlib import Path
 from app.ppt.ppt_builder import PPTBuilder
 from app.schemas.common import GenerationSettings
 from app.schemas.deck import DeckPlan, PaperSummary, SlideDrafts
+from pptx import Presentation
 
 
 def test_ppt_builder_generates_file(tmp_path: Path):
@@ -43,3 +44,10 @@ def test_ppt_builder_generates_file(tmp_path: Path):
     builder.build(output, summary, plan, drafts, GenerationSettings())
     assert output.exists()
     assert output.stat().st_size > 0
+    texts = []
+    prs = Presentation(output)
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if hasattr(shape, "text") and shape.text:
+                texts.append(shape.text)
+    assert all("Confidence:" not in text for text in texts)

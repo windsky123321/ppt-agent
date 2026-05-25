@@ -31,8 +31,9 @@ def test_mock_provider_summary():
     provider = MockLLMProvider(sample_paper())
     summary = PaperSummaryAgent(provider).run(sample_paper())
     assert summary.title == "Sample Paper"
-    assert "parses PDFs" in summary.method_overview
-    assert "editable PPTX" in " ".join(summary.main_results)
+    assert "PDF" in summary.method_overview or "解析" in summary.method_overview
+    assert "PPT" in " ".join(summary.main_results) or "结果" in " ".join(summary.main_results)
+    assert "uncertain" not in summary.method_overview.lower()
 
 
 def test_mock_provider_slide_drafts():
@@ -42,6 +43,7 @@ def test_mock_provider_slide_drafts():
     plan = DeckPlannerAgent(provider).run(paper, summary, GenerationSettings(slide_count=12))
     drafts = SlideWriterAgent(provider).run(paper, summary, plan)
     assert isinstance(drafts, SlideDrafts)
-    method_slide = next(slide for slide in drafts.slides if slide.title == "Method Overview")
+    method_slide = next(slide for slide in drafts.slides if slide.slide_type == "method")
     assert any(ref.section_title == "Method" for ref in method_slide.source_refs)
     assert method_slide.speaker_notes
+    assert "Confidence" not in method_slide.key_message

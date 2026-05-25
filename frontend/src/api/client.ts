@@ -36,11 +36,13 @@ export async function uploadPaper(
   file: File,
   settings: GenerationSettings,
   profileId?: string,
-  deckMode = "Reading Group",
+  deckMode = "reading_group",
 ): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  if (profileId) formData.append("profile_id", profileId);
+  if (profileId) {
+    formData.append("profile_id", profileId);
+  }
   formData.append("deck_mode", deckMode);
   formData.append("long_instruction", settings.long_instruction);
   formData.append("language", settings.language);

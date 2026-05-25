@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import re
+
 from app.schemas.common import SourceRef
 from app.schemas.paper import ParsedPaper, Section
-from app.utils.text_utils import normalize_whitespace, safe_truncate
+from app.utils.text_utils import normalize_presentation_text, normalize_whitespace, split_sentences, truncate_plain
 
 
 SECTION_ALIASES: dict[str, list[str]] = {
@@ -42,20 +44,23 @@ def build_section_map(paper: ParsedPaper) -> dict[str, list[Section]]:
 def pick_primary_text(section_map: dict[str, list[Section]], key: str, fallback: str = "") -> str:
     sections = section_map.get(key, [])
     if sections:
-        return normalize_whitespace(" ".join(section.text for section in sections))
-    return normalize_whitespace(fallback)
+        return normalize_presentation_text(" ".join(section.text for section in sections))
+    return normalize_presentation_text(fallback)
 
 
 def first_sentences(text: str, limit: int = 2) -> list[str]:
-    if not text:
-        return []
-    parts = [normalize_whitespace(chunk) for chunk in text.replace("?", ".").replace("!", ".").split(".") if normalize_whitespace(chunk)]
-    return parts[:limit]
+    return split_sentences(text, limit=limit)
 
 
 def bulletize(text: str, max_bullets: int = 4) -> list[str]:
     bullets = first_sentences(text, limit=max_bullets)
-    return [safe_truncate(sentence, 120) for sentence in bullets if sentence]
+    cleaned: list[str] = []
+    for sentence in bullets:
+        candidate = truncate_plain(sentence, 120)
+        candidate = re.sub(r"^(and|or|but)\s+", "", candidate, flags=re.IGNORECASE)
+        if candidate:
+            cleaned.append(candidate)
+    return cleaned
 
 
 def make_source_refs(sections: list[Section], max_refs: int = 2) -> list[SourceRef]:
@@ -65,7 +70,7 @@ def make_source_refs(sections: list[Section], max_refs: int = 2) -> list[SourceR
             SourceRef(
                 page_number=section.page_start if section.page_start > 0 else None,
                 section_title=section.title,
-                evidence_summary=safe_truncate(normalize_whitespace(section.text), 160),
+                evidence_summary=truncate_plain(normalize_presentation_text(section.text), 160),
             )
         )
     return refs

@@ -67,6 +67,7 @@ class GroundingWarning(BaseModel):
     slide_id: str
     severity: str
     message: str
+    zh_message: str = ""
 
 
 class GroundingReport(BaseModel):
@@ -93,6 +94,10 @@ class JobStatus(BaseModel):
     current_stage: str = ""
     critic_approved: bool | None = None
     grounding_warning_count: int | None = None
+    mock_mode: bool = False
+    delivery_ready: bool = False
+    quality_status: str = "pending"
+    download_artifact_name: str = "final_deck.pptx"
 
 
 class CriticIssue(BaseModel):
@@ -100,6 +105,7 @@ class CriticIssue(BaseModel):
     severity: str
     category: str
     description: str
+    zh_message: str = ""
     suggested_fix: str
     requires_regeneration: bool
 
@@ -107,6 +113,7 @@ class CriticIssue(BaseModel):
 class CriticReport(BaseModel):
     deck_score: int
     summary: str
+    zh_summary: str = ""
     issues: list[CriticIssue] = Field(default_factory=list)
     approved: bool = False
 
@@ -121,3 +128,19 @@ class RepairHistoryItem(BaseModel):
 
 class RepairHistory(BaseModel):
     loops: list[RepairHistoryItem] = Field(default_factory=list)
+
+
+class QualityIssue(BaseModel):
+    slide_id: str
+    slide_title: str
+    severity: str
+    category: str
+    message: str
+
+
+class QualityReport(BaseModel):
+    passed: bool = True
+    blocked_export: bool = False
+    issue_count: int = 0
+    issues: list[QualityIssue] = Field(default_factory=list)
+    low_confidence_notes: list[str] = Field(default_factory=list)

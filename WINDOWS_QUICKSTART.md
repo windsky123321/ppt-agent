@@ -9,19 +9,32 @@
 
 ## 开发版下载
 
-1. 打开 GitHub Actions
-2. 进入 `Build Windows EXE`
-3. 下载 artifact：`PPT-Agent-Windows-Release`
-4. 解压
-5. 双击 `PPT-Agent.exe`
+1. 打开 GitHub Actions。
+2. 进入 `Build Windows EXE`。
+3. 下载 artifact：`PPT-Agent-Windows-Release`。
+4. 解压。
+5. 双击 `PPT-Agent.exe`。
 
 ## 第一次启动
 
-1. 等待浏览器自动打开
-2. 打开“模型配置”
-3. 填写 API Key，或切换到 Mock 模式
-4. 返回工作台上传 PDF
-5. 点击“生成 PPT”
+1. 等待浏览器自动打开。
+2. 打开“模型配置”。
+3. 填写 API Key，或切换到 Mock 模式。
+4. 返回工作台上传 PDF。
+5. 点击“生成 PPT”。
+
+## Mock 模式
+
+- Mock 模式只用于测试上传、生成、下载流程。
+- Mock 不会调用真实模型。
+- Mock 生成结果会显示“模拟生成完成”。
+- Mock 下载文件会显示“测试文件”。
+
+## 质量检查
+
+- 如果质量检查通过，通常会生成 `final_deck.pptx`。
+- 如果质量检查未通过，系统会提示继续精修。
+- 此时通常只保留 `draft_deck.pptx`，不建议直接用于正式汇报。
 
 ## 技能库
 
@@ -53,6 +66,7 @@
 
 - 启动日志：`logs/launcher.log`
 - 后端日志：`logs/backend.log`
+- 质量报告：`storage/decks/<job_id>/quality_report.json`
 
 ## 查看本地数据目录
 

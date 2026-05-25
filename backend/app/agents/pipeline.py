@@ -8,6 +8,7 @@ from app.agents.deck_planner_agent import DeckPlannerAgent
 from app.agents.grounding_checker import GroundingChecker
 from app.agents.instruction_parser_agent import InstructionParserAgent
 from app.agents.paper_summary_agent import PaperSummaryAgent
+from app.agents.quality_checker import SlideQualityChecker
 from app.agents.regenerate_slide_agent import RegenerateSlideAgent
 from app.agents.repair_agent import RepairAgent
 from app.agents.slide_writer_agent import SlideWriterAgent
@@ -45,6 +46,7 @@ class PaperToPPTPipeline:
         self.asset_extractor = AssetExtractor()
         self.ppt_builder = PPTBuilder()
         self.critic = CriticAgent()
+        self.quality_checker = SlideQualityChecker()
         self.repair = RepairAgent()
         self.regenerator = RegenerateSlideAgent(SlideWriterAgent(create_llm_provider()))
         self.instruction_parser = InstructionParserAgent()
@@ -56,7 +58,7 @@ class PaperToPPTPipeline:
         original_filename: str,
         settings: GenerationSettings,
         profile: UserProfile | None = None,
-        deck_mode: str = "Reading Group",
+        deck_mode: str = "reading_group",
         parsed_instruction: ParsedInstructionSpec | None = None,
     ) -> JobStatus:
         job_id = f"job_{uuid4().hex[:12]}"
@@ -73,11 +75,11 @@ class PaperToPPTPipeline:
             status="processing",
             paper_id=paper_id,
             deck_id=deck_id,
-            message="Starting pipeline",
+            message="开始生成 PPT",
             profile_id=active_profile.id,
         )
         self.storage.save_job_status(status)
-        self.storage.touch_job_stage(job_id, "Uploading", "Saving uploaded PDF", active_profile.id)
+        self.storage.touch_job_stage(job_id, "Uploading", "正在保存上传的 PDF", active_profile.id)
         if settings.long_instruction:
             self.storage.save_text_artifact(job_id, "user_instruction_raw.md", settings.long_instruction)
         if parsed_instruction:
@@ -87,7 +89,7 @@ class PaperToPPTPipeline:
 
         pdf_path = self.storage.save_bytes(job_id, "original.pdf", pdf_bytes)
 
-        self.storage.touch_job_stage(job_id, "Parsing paper", "Parsing PDF into structured paper", active_profile.id)
+        self.storage.touch_job_stage(job_id, "Parsing paper", "正在解析 PDF 结构", active_profile.id)
         parsed_paper = self.parser.parse(pdf_path, paper_id=paper_id)
         self.storage.save_json_artifact(job_id, "parsed_paper.json", parsed_paper.model_dump())
 
@@ -103,7 +105,7 @@ class PaperToPPTPipeline:
             slide_count=settings.slide_count,
         )
 
-        self.storage.touch_job_stage(job_id, "Extracting figures and tables", "Extracting multimodal assets", active_profile.id)
+        self.storage.touch_job_stage(job_id, "Extracting figures and tables", "正在提取图表和多模态素材", active_profile.id)
         extracted_assets = self._time_stage(
             job_id,
             runtime_config,
@@ -114,10 +116,10 @@ class PaperToPPTPipeline:
         self.storage.save_json_artifact(job_id, "extracted_assets.json", extracted_assets.model_dump())
 
         if settings.long_instruction:
-            self.storage.touch_job_stage(job_id, "Parsing long instruction", "Parsing long-form user requirement", active_profile.id)
-            self.storage.touch_job_stage(job_id, "Merging profile and instruction", "Applying instruction overrides safely", active_profile.id)
+            self.storage.touch_job_stage(job_id, "Parsing long instruction", "正在解析长需求", active_profile.id)
+            self.storage.touch_job_stage(job_id, "Merging profile and instruction", "正在合并需求与配置", active_profile.id)
 
-        self.storage.touch_job_stage(job_id, "Summarizing paper", "Creating grounded paper summary", active_profile.id)
+        self.storage.touch_job_stage(job_id, "Summarizing paper", "正在整理论文摘要", active_profile.id)
         llm.set_usage_context(stage="Outline")
         summary = self._time_stage(
             job_id,
@@ -143,7 +145,7 @@ class PaperToPPTPipeline:
         if skill_routing:
             self.storage.save_json_artifact(job_id, "skill_routing.json", {"records": skill_routing})
 
-        self.storage.touch_job_stage(job_id, "Planning deck", "Planning deck structure from profile and paper", active_profile.id)
+        self.storage.touch_job_stage(job_id, "Planning deck", "正在规划汇报结构", active_profile.id)
         llm.set_usage_context(stage="Outline")
         plan = self._time_stage(
             job_id,
@@ -154,7 +156,7 @@ class PaperToPPTPipeline:
         )
         self.storage.save_json_artifact(job_id, "deck_plan.json", plan.model_dump())
 
-        self.storage.touch_job_stage(job_id, "Writing slides", "Writing grounded slide drafts", active_profile.id)
+        self.storage.touch_job_stage(job_id, "Writing slides", "正在撰写页面草稿", active_profile.id)
         llm.set_usage_context(stage="Slide writing")
         drafts = self._time_stage(
             job_id,
@@ -164,8 +166,17 @@ class PaperToPPTPipeline:
             slide_count=settings.slide_count,
         )
         self.storage.save_json_artifact(job_id, "slide_drafts.json", drafts.model_dump())
+        drafts = self._enforce_quality(
+            job_id,
+            runtime_config,
+            parsed_paper,
+            drafts,
+            active_profile,
+            extracted_assets,
+            settings.slide_count,
+        )
 
-        self.storage.touch_job_stage(job_id, "Checking grounding", "Running grounding checker", active_profile.id)
+        self.storage.touch_job_stage(job_id, "Checking grounding", "正在检查页面依据", active_profile.id)
         grounding_report = self._time_stage(
             job_id,
             runtime_config,
@@ -178,7 +189,7 @@ class PaperToPPTPipeline:
         critic_report = None
         repair_history = None
         if self.settings.enable_critic:
-            self.storage.touch_job_stage(job_id, "Running critic", "Critiquing deck quality", active_profile.id)
+            self.storage.touch_job_stage(job_id, "Running critic", "正在执行质量检查", active_profile.id)
             llm.set_usage_context(stage="Critic")
             critic_report = self._time_stage(
                 job_id,
@@ -189,7 +200,7 @@ class PaperToPPTPipeline:
             )
             self.storage.save_json_artifact(job_id, "critic_report.json", critic_report.model_dump())
         if self.settings.enable_repair and critic_report and critic_report.issues:
-            self.storage.touch_job_stage(job_id, "Repairing issues", "Applying deterministic slide repairs", active_profile.id)
+            self.storage.touch_job_stage(job_id, "Repairing issues", "正在自动精修页面问题", active_profile.id)
             llm.set_usage_context(stage="Repair")
             drafts, repair_history = self._time_stage(
                 job_id,
@@ -207,13 +218,27 @@ class PaperToPPTPipeline:
             )
             self.storage.save_json_artifact(job_id, "slide_drafts.json", drafts.model_dump())
             self.storage.save_json_artifact(job_id, "repair_history.json", repair_history.model_dump())
+            drafts = self._enforce_quality(
+                job_id,
+                runtime_config,
+                parsed_paper,
+                drafts,
+                active_profile,
+                extracted_assets,
+                settings.slide_count,
+            )
             grounding_report = GroundingChecker().run(drafts)
             self.storage.save_json_artifact(job_id, "grounding_report.json", grounding_report.model_dump())
             critic_report = self.critic.run(drafts, grounding_report, routed_profile)
             self.storage.save_json_artifact(job_id, "critic_report.json", critic_report.model_dump())
 
-        self.storage.touch_job_stage(job_id, "Building PPTX", "Building editable PowerPoint", active_profile.id)
-        output_path = self.storage.get_artifact_path(job_id, "final_deck.pptx")
+        mock_mode = runtime_config.llm_provider == "mock" or runtime_config.vision_provider == "mock"
+        delivery_ready = bool(critic_report.approved) if critic_report else True
+        quality_status = "passed" if delivery_ready else "failed"
+        output_name = "draft_deck.pptx" if mock_mode or not delivery_ready else "final_deck.pptx"
+
+        self.storage.touch_job_stage(job_id, "Building PPTX", "正在导出 PPT", active_profile.id)
+        output_path = self.storage.get_artifact_path(job_id, output_name)
         self._time_stage(
             job_id,
             runtime_config,
@@ -223,17 +248,35 @@ class PaperToPPTPipeline:
             output_file=str(output_path),
         )
 
+        if not delivery_ready:
+            try:
+                final_output = self.storage.get_artifact_path(job_id, "final_deck.pptx")
+                if final_output.exists():
+                    final_output.unlink()
+            except Exception:
+                pass
+
         complete = JobStatus(
             job_id=job_id,
-            status="completed",
+            status="completed" if delivery_ready and not mock_mode else "completed_with_warnings" if mock_mode and delivery_ready else "quality_failed",
             paper_id=paper_id,
             deck_id=deck_id,
-            message=f"Generated deck for {original_filename}",
+            message=(
+                f"模拟生成完成：{original_filename}"
+                if mock_mode
+                else f"Generated deck for {original_filename}"
+                if delivery_ready
+                else "生成完成，但质量检查未通过，建议继续精修后再使用。"
+            ),
             artifacts=self.storage.list_artifacts(job_id),
             profile_id=active_profile.id,
             current_stage="Complete",
             critic_approved=critic_report.approved if critic_report else None,
             grounding_warning_count=len(grounding_report.warnings),
+            mock_mode=mock_mode,
+            delivery_ready=delivery_ready and not mock_mode,
+            quality_status=quality_status if not mock_mode else "mock",
+            download_artifact_name=output_name,
         )
         self.storage.save_job_status(complete)
         return complete
@@ -287,12 +330,24 @@ class PaperToPPTPipeline:
             active_profile,
             ExtractedAssets(**extracted_assets),
         )
+        drafts_model = self._enforce_quality(
+            deck_id,
+            runtime_config,
+            ParsedPaper(**parsed_paper),
+            drafts_model,
+            active_profile,
+            ExtractedAssets(**extracted_assets),
+            len(slide_ids),
+        )
         self.storage.save_json_artifact(deck_id, "slide_drafts.json", drafts_model.model_dump())
         grounding_report = GroundingChecker().run(drafts_model)
         self.storage.save_json_artifact(deck_id, "grounding_report.json", grounding_report.model_dump())
         critic_report = self.critic.run(drafts_model, grounding_report, active_profile)
         self.storage.save_json_artifact(deck_id, "critic_report.json", critic_report.model_dump())
-        output_path = self.storage.get_artifact_path(deck_id, "final_deck.pptx")
+        mock_mode = runtime_config.llm_provider == "mock" or runtime_config.vision_provider == "mock"
+        delivery_ready = critic_report.approved and not mock_mode
+        output_name = "final_deck.pptx" if delivery_ready else "draft_deck.pptx"
+        output_path = self.storage.get_artifact_path(deck_id, output_name)
         self.ppt_builder.build(
             output_path,
             PaperSummary(**paper_summary),
@@ -318,9 +373,20 @@ class PaperToPPTPipeline:
             )
         )
         current_status.artifacts = self.storage.list_artifacts(deck_id)
-        current_status.message = f"Regenerated slides: {', '.join(slide_ids)}"
+        current_status.message = (
+            f"模拟精修完成：{', '.join(slide_ids)}"
+            if mock_mode
+            else f"已完成精修：{', '.join(slide_ids)}"
+            if delivery_ready
+            else "精修已完成，但质量检查仍未通过。"
+        )
+        current_status.status = "completed" if delivery_ready else "completed_with_warnings" if mock_mode else "quality_failed"
         current_status.critic_approved = critic_report.approved
         current_status.grounding_warning_count = len(grounding_report.warnings)
+        current_status.mock_mode = mock_mode
+        current_status.delivery_ready = delivery_ready
+        current_status.quality_status = "passed" if delivery_ready else "mock" if mock_mode else "failed"
+        current_status.download_artifact_name = output_name
         self.storage.save_job_status(current_status)
         return current_status
 
@@ -368,6 +434,75 @@ class PaperToPPTPipeline:
             )
         )
         return result
+
+    def _enforce_quality(
+        self,
+        job_id: str,
+        runtime_config: RuntimeModelConfig,
+        parsed_paper: ParsedPaper,
+        drafts: SlideDrafts,
+        profile: UserProfile,
+        assets: ExtractedAssets,
+        slide_count: int,
+    ) -> SlideDrafts:
+        self.storage.touch_job_stage(
+            job_id,
+            "Quality check",
+            "检查中文汇报质量并修复问题",
+            profile.id,
+        )
+        quality_report = self._time_stage(
+            job_id,
+            runtime_config,
+            "Repair",
+            lambda: self.quality_checker.run(drafts),
+            slide_count=slide_count,
+        )
+        self._save_quality_report(job_id, quality_report)
+        if quality_report.passed:
+            return drafts
+
+        repaired_drafts, quality_repair_history = self._time_stage(
+            job_id,
+            runtime_config,
+            "Repair",
+            lambda: self.repair.repair_quality(
+                parsed_paper,
+                drafts,
+                quality_report,
+                profile,
+                assets,
+                self.settings.max_repair_loops,
+            ),
+            slide_count=slide_count,
+        )
+        self.storage.save_json_artifact(job_id, "slide_drafts.json", repaired_drafts.model_dump())
+        self.storage.save_json_artifact(job_id, "repair_history.json", quality_repair_history.model_dump())
+
+        final_report = self.quality_checker.run(repaired_drafts)
+        self._save_quality_report(job_id, final_report)
+        if not final_report.passed:
+            raise ValueError("已拦截低质量 PPT，请查看 quality_report.json。")
+        return repaired_drafts
+
+    def _save_quality_report(self, job_id: str, quality_report) -> None:
+        self.storage.save_json_artifact(job_id, "quality_report.json", quality_report.model_dump())
+        markdown_lines = [
+            "# 质量检查报告",
+            f"- 是否通过：{'是' if quality_report.passed else '否'}",
+            f"- 问题数量：{quality_report.issue_count}",
+            "",
+        ]
+        if quality_report.low_confidence_notes:
+            markdown_lines.append("## 低置信提示")
+            markdown_lines.extend(f"- {note}" for note in quality_report.low_confidence_notes)
+            markdown_lines.append("")
+        if quality_report.issues:
+            markdown_lines.append("## 质量问题")
+            markdown_lines.extend(
+                f"- {issue.slide_id or issue.slide_title} | {issue.category} | {issue.message}" for issue in quality_report.issues
+            )
+        self.storage.save_text_artifact(job_id, "quality_report.md", "\n".join(markdown_lines).strip() + "\n")
 
     def _apply_skill_guidance(
         self,

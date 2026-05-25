@@ -6,7 +6,7 @@ from pathlib import Path
 import fitz
 
 from app.schemas.paper import FigureItem, PageContent, ParsedPaper, Section, TableItem
-from app.utils.text_utils import normalize_whitespace, split_paragraphs
+from app.utils.text_utils import normalize_presentation_text, normalize_whitespace, split_paragraphs
 
 
 class PDFParser:
@@ -132,6 +132,22 @@ class PDFParser:
     def _clean_page_text(self, text: str) -> str:
         lines = [re.sub(r"\s+", " ", line).strip() for line in text.splitlines()]
         non_empty = [line for line in lines if line]
+        cleaned_lines: list[str] = []
+        seen_recent: list[str] = []
+        for line in non_empty:
+            lowered = line.lower()
+            if lowered.startswith("arxiv:") or lowered.startswith("copyright ") or "all rights reserved" in lowered:
+                continue
+            if re.fullmatch(r"\d+", line):
+                continue
+            if len(line) <= 2:
+                continue
+            normalized = normalize_presentation_text(line)
+            if normalized in seen_recent[-3:]:
+                continue
+            cleaned_lines.append(normalized)
+            seen_recent.append(normalized)
+        non_empty = cleaned_lines
         return "\n".join(non_empty)
 
     def _extract_abstract(self, full_text: str, lines: list[str], paragraphs: list[str]) -> str:

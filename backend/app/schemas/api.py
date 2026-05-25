@@ -14,6 +14,7 @@ from app.schemas.usage import UsageSummary, UsageTaskDetail, UsageTasksResponse
 class UploadResponse(BaseModel):
     job: JobStatus
     parsed_paper: ParsedPaper
+    paper_summary: dict | None = None
     artifacts_url: str
     download_url: str
 

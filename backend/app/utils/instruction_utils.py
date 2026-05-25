@@ -122,6 +122,11 @@ def merge_profile_with_instruction(
     )
 
     mode_defaults = {
+        "reading_group": {"slide_count": 14, "include_discussion_questions": True},
+        "thesis_defense": {"slide_count": 18, "include_discussion_questions": True},
+        "research_report": {"slide_count": 12, "include_discussion_questions": False},
+        "business_report": {"slide_count": 10, "include_discussion_questions": False},
+        "teaching": {"slide_count": 12, "include_discussion_questions": True},
         "Quick Summary": {"slide_count": 8, "include_discussion_questions": False},
         "Reading Group": {"slide_count": 14, "include_discussion_questions": True},
         "Conference Talk": {"slide_count": 12, "include_discussion_questions": False},

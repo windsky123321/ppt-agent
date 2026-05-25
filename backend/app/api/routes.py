@@ -57,9 +57,9 @@ def health() -> HealthResponse:
 async def upload_paper(
     file: UploadFile = File(...),
     profile_id: str | None = Form(default=None),
-    deck_mode: str = Form(default="Reading Group"),
+    deck_mode: str = Form(default="reading_group"),
     long_instruction: str = Form(default=""),
-    language: str = Form(default="en"),
+    language: str = Form(default="zh"),
     audience: str = Form(default="graduate"),
     slide_count: int = Form(default=10),
     include_speaker_notes: bool = Form(default=True),
@@ -67,11 +67,18 @@ async def upload_paper(
     theme: str = Form(default="academic_clean"),
 ) -> UploadResponse:
     if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="只支持上传 PDF 文件。")
+        raise HTTPException(status_code=400, detail="仅支持上传 PDF 文件。")
 
     pdf_bytes = await file.read()
     if not pdf_bytes:
         raise HTTPException(status_code=400, detail="上传的 PDF 为空。")
+
+    runtime_config = config_storage.load_model_config()
+    if runtime_config.llm_provider != "mock" and not runtime_config.llm_api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="请先在模型配置中填写 API Key，或切换到 Mock 模式进行流程测试。",
+        )
 
     settings = GenerationSettings(
         language=language,
@@ -109,13 +116,18 @@ async def upload_paper(
             deck_mode=deck_mode,
             parsed_instruction=parsed_instruction,
         )
+    except ValueError as exc:
+        message = str(exc).strip() or "已拦截低质量 PPT，请查看 quality_report.json。"
+        if "quality_report" in message or "PPT" in message:
+            message = "已拦截低质量 PPT，请查看 quality_report.json。"
+        raise HTTPException(status_code=422, detail=message) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"生成流程失败：{exc}") from exc
 
-    parsed_paper = storage.load_json_artifact(job.job_id, "parsed_paper.json")
     return UploadResponse(
         job=job,
-        parsed_paper=parsed_paper,
+        parsed_paper=storage.load_json_artifact(job.job_id, "parsed_paper.json"),
+        paper_summary=storage.load_json_artifact(job.job_id, "paper_summary.json"),
         artifacts_url=f"/api/decks/{job.deck_id}/artifacts",
         download_url=f"/api/decks/{job.deck_id}/download",
     )
@@ -139,6 +151,10 @@ def get_artifacts(deck_id: str):
         "deck_id": deck_id,
         "artifacts": storage.list_artifacts(deck_id),
         "deck_status": status.status,
+        "delivery_ready": status.delivery_ready,
+        "mock_mode": status.mock_mode,
+        "quality_status": status.quality_status,
+        "download_artifact_name": status.download_artifact_name,
         "grounding_status": status.grounding_warning_count,
         "critic_approval_status": status.critic_approved,
     }
@@ -154,12 +170,14 @@ def download_artifact(deck_id: str, artifact_name: str):
 
 @router.get("/decks/{deck_id}/download")
 def download_deck(deck_id: str):
-    pptx_path = storage.get_artifact_path(deck_id, "final_deck.pptx")
+    final_path = storage.get_artifact_path(deck_id, "final_deck.pptx")
+    draft_path = storage.get_artifact_path(deck_id, "draft_deck.pptx")
+    pptx_path = final_path if final_path.exists() else draft_path
     if not pptx_path.exists():
-        raise HTTPException(status_code=404, detail="未找到生成的 PPTX。")
+        raise HTTPException(status_code=404, detail="未找到可下载的 PPT 文件。")
     return FileResponse(
         path=pptx_path,
-        filename=f"{deck_id}.pptx",
+        filename=pptx_path.name,
         media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
     )
 
@@ -212,6 +230,13 @@ def regenerate_slide(deck_id: str, payload: RegenerateSlideRequest = Body(...)):
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="缺少 deck 相关产物。") from exc
+    except ValueError as exc:
+        message = str(exc).strip() or "已拦截低质量 PPT，请查看 quality_report.json。"
+        if "quality_report" in message or "PPT" in message:
+            message = "已拦截低质量 PPT，请查看 quality_report.json。"
+        raise HTTPException(status_code=422, detail=message) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"精修失败：{exc}") from exc
     return {
         "job": job,
         "download_url": f"/api/decks/{deck_id}/download",
@@ -263,12 +288,17 @@ def test_model_config(payload: RuntimeModelConfig) -> ModelTestResponse:
     if payload.llm_provider == "mock":
         return ModelTestResponse(
             success=True,
-            message="Mock 模式可用。",
+            message="Mock 模式可用，仅用于流程测试。",
             llm_ok=True,
             vision_ok=(not payload.enable_vision) or payload.vision_provider == "mock",
         )
     if not payload.llm_api_key:
-        return ModelTestResponse(success=False, message="LLM API Key 未配置。", llm_ok=False, vision_ok=False)
+        return ModelTestResponse(
+            success=False,
+            message="请先填写 API Key 后再进行正式生成。",
+            llm_ok=False,
+            vision_ok=False,
+        )
     fallback_note = ""
     if payload.llm_model == "gpt-5.5":
         fallback_note = f" 若当前运行时不支持 gpt-5.5，将回退到 {payload.fallback_llm_model}。"
@@ -350,7 +380,9 @@ async def import_skill(
                 handle.write(await file.read())
                 temp_path = Path(handle.name)
             return skill_storage.import_from_zip(
-                temp_path, allow_overwrite=allow_overwrite, preview_only=preview_only
+                temp_path,
+                allow_overwrite=allow_overwrite,
+                preview_only=preview_only,
             )
         if folder_path.strip():
             return skill_storage.import_from_folder(

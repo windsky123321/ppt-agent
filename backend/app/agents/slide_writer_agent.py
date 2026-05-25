@@ -1,16 +1,36 @@
 import json
+import re
 
 from app.llm.providers import BaseLLMProvider
 from app.prompts.templates import SLIDE_WRITER_PROMPT
 from app.schemas.assets import ExtractedAssets
 from app.schemas.deck import DeckPlan, PaperSummary, SlideDraft, SlideDrafts
-from app.schemas.paper import ParsedPaper
+from app.schemas.paper import ParsedPaper, Section
 from app.schemas.profile import UserProfile
 from app.utils.paper_utils import build_section_map, bulletize, make_source_refs, pick_primary_text
-from app.utils.text_utils import safe_truncate
+from app.utils.text_utils import compress_title, contains_cjk, normalize_presentation_text, truncate_plain
 
 
 class SlideWriterAgent:
+    TITLE_MAP = {
+        "title": "论文汇报",
+        "divider": "章节过渡",
+        "takeaway": "核心结论",
+        "background": "研究背景",
+        "problem": "问题定义",
+        "contributions": "论文贡献",
+        "method": "方法概览",
+        "technical": "技术细节",
+        "experiments": "实验设计",
+        "results": "实验结果",
+        "analysis": "结果分析",
+        "strengths": "论文优势",
+        "limitations": "研究局限",
+        "discussion": "讨论问题",
+        "conclusion": "总结结论",
+        "backup": "补充证据",
+    }
+
     def __init__(self, llm: BaseLLMProvider) -> None:
         self.llm = llm
 
@@ -57,7 +77,7 @@ class SlideWriterAgent:
             )
             draft.slide_id = slide.slide_id
             draft.slide_type = slide.slide_type
-            draft.purpose = slide.purpose
+            draft.purpose = slide.purpose or draft.purpose
             drafts.append(draft)
         return SlideDrafts(slides=drafts)
 
@@ -68,7 +88,7 @@ class SlideWriterAgent:
         key_section: str,
         paper: ParsedPaper,
         summary: PaperSummary,
-        section_map,
+        section_map: dict[str, list[Section]],
         asset_ids: list[str],
         assets: ExtractedAssets | None,
         profile: UserProfile | None,
@@ -89,7 +109,7 @@ class SlideWriterAgent:
             or "图" in profile_instruction
             or "表" in profile_instruction
         )
-        chinese_mode = bool(profile and profile.preferred_language == "zh")
+        chinese_mode = True if profile is None else profile.preferred_language != "en"
 
         visual_elements = []
         for asset_id in asset_ids[:1]:
@@ -100,7 +120,9 @@ class SlideWriterAgent:
                         "type": asset.asset_type,
                         "asset_id": asset.id,
                         "description": asset.short_visual_description or asset.original_caption,
-                        "placement_hint": "right_panel" if slide_type in {"method", "technical", "results", "analysis", "backup"} else "footer_callout",
+                        "placement_hint": "right_panel"
+                        if slide_type in {"method", "technical", "results", "analysis", "backup"}
+                        else "footer_callout",
                     }
                 )
 
@@ -108,15 +130,12 @@ class SlideWriterAgent:
             return SlideDraft(
                 slide_id="",
                 slide_type=slide_type,
-                title=self._format_title(paper.title, False),
-                subtitle=", ".join(paper.authors[:4]) or "Academic paper presentation",
-                purpose="Introduce the paper and the active presentation profile.",
-                key_message=safe_truncate(summary.one_sentence_summary, 80),
+                title=self._title_slide_title(paper.title, summary),
+                subtitle="、".join(paper.authors[:4]) or "论文汇报",
+                purpose="介绍论文主题与汇报重点。",
+                key_message=truncate_plain(summary.one_sentence_summary, 80),
                 bullets=[],
-                speaker_notes=self._maybe_notes(
-                    profile,
-                    f"Introduce the paper title, authors, and the core topic: {summary.one_sentence_summary}",
-                ),
+                speaker_notes=self._maybe_notes(profile, f"开场说明论文主题、作者与核心结论：{summary.one_sentence_summary}"),
                 confidence=0.95,
             )
 
@@ -125,11 +144,11 @@ class SlideWriterAgent:
                 slide_id="",
                 slide_type=slide_type,
                 title=self._format_title(title, chinese_mode),
-                subtitle="From motivation to technical content",
-                purpose="Transition into the next section.",
-                key_message="This section shifts from context into the main technical argument.",
+                subtitle="从问题背景过渡到核心方法",
+                purpose="承接上一部分并进入下一主题。",
+                key_message="下面开始聚焦论文的核心方法、证据与结论。",
                 bullets=[],
-                speaker_notes=self._maybe_notes(profile, "Use this slide as a transition before going deeper into the problem and method."),
+                speaker_notes=self._maybe_notes(profile, "这一页只做过渡，提醒听众接下来进入关键方法与结果。"),
                 confidence=0.9,
             )
 
@@ -138,19 +157,23 @@ class SlideWriterAgent:
             return SlideDraft(
                 slide_id="",
                 slide_type=slide_type,
-                title="补充证据" if chinese_mode else self._format_title(title, False),
-                subtitle="Extra grounded material for Q&A",
-                purpose="Keep compact backup evidence for deeper discussion.",
-                key_message="Use this slide only when the audience asks for deeper evidence or implementation detail.",
-                bullets=self._compact_bullets(
-                    bulletize(
-                        pick_primary_text(section_map, "results", fallback=pick_primary_text(section_map, "method")),
-                        max_bullets=4,
+                title="补充证据",
+                subtitle="答疑时按需展开",
+                purpose="保留可追溯的补充证据。",
+                key_message="仅在答疑或追问时展示，补充结果或方法细节。",
+                bullets=self._ensure_meaningful_bullets(
+                    self._compact_bullets(
+                        bulletize(
+                            pick_primary_text(section_map, "results", fallback=pick_primary_text(section_map, "method")),
+                            max_bullets=4,
+                        ),
+                        chinese_mode,
                     ),
-                    chinese_mode,
+                    section_map.get("results", []) or section_map.get("method", []),
+                    slide_type,
                 ),
                 visual_elements=visual_elements,
-                speaker_notes=self._maybe_notes(profile, "Use this slide as backup material only when questions require more direct evidence from the paper."),
+                speaker_notes=self._maybe_notes(profile, "仅在需要补充原文证据时展示这一页。"),
                 source_refs=source_refs,
                 confidence=0.8 if source_refs else 0.5,
             )
@@ -161,7 +184,7 @@ class SlideWriterAgent:
                 [
                     summary.problem,
                     summary.method_overview,
-                    summary.main_results[0] if summary.main_results else "Results remain uncertain from the parsed paper.",
+                    summary.main_results[0] if summary.main_results else "结果信息有限，需回到原文结果章节核对。",
                 ],
                 section_map.get("abstract", []) or section_map.get("introduction", []),
             ),
@@ -175,11 +198,11 @@ class SlideWriterAgent:
             ),
             "problem": (
                 summary.problem,
-                [summary.problem, summary.research_gap, "Clarify the exact research task before method details."],
+                [summary.problem, summary.research_gap, "先说清研究对象、业务场景与评价目标。"],
                 section_map.get("problem", []) or section_map.get("introduction", []),
             ),
             "contributions": (
-                "The paper makes several concrete contributions.",
+                "论文贡献应围绕方法、结果与应用价值来概括。",
                 summary.key_contributions[:4],
                 section_map.get("method", []) or section_map.get("conclusion", []),
             ),
@@ -202,12 +225,12 @@ class SlideWriterAgent:
                 section_map.get("experiments", []),
             ),
             "results": (
-                "The main results should be read directly from the paper evidence.",
+                "结果页只保留能直接支撑结论的核心证据。",
                 summary.main_results[:4],
                 section_map.get("results", []) or section_map.get("experiments", []),
             ),
             "analysis": (
-                "Deeper analysis is only included when the paper exposes it.",
+                "分析页重点解释结果原因、边界与可迁移性。",
                 bulletize(
                     pick_primary_text(section_map, "discussion", fallback=pick_primary_text(section_map, "results")),
                     max_bullets=4,
@@ -215,23 +238,23 @@ class SlideWriterAgent:
                 section_map.get("discussion", []) or section_map.get("results", []),
             ),
             "strengths": (
-                "The strengths reflect what the parsed paper supports directly.",
+                "优势页只概括原文能支撑的强项。",
                 summary.strengths[:4],
                 section_map.get("results", []) or section_map.get("method", []),
             ),
             "limitations": (
-                "Limitations are stated conservatively and marked uncertain when weakly grounded.",
+                "局限页只保留原文可支撑的风险与边界。",
                 summary.limitations[:4],
                 section_map.get("limitations", []) or section_map.get("discussion", []) or section_map.get("results", []),
             ),
             "discussion": (
-                "Use these questions to drive group discussion.",
+                "讨论页用于引导老师或同学继续追问价值与边界。",
                 summary.discussion_points[:4],
                 section_map.get("discussion", []) or section_map.get("results", []) or section_map.get("introduction", []),
             ),
             "conclusion": (
                 summary.conclusion,
-                [summary.conclusion, "Revisit the main contributions and evidence quality."],
+                [summary.conclusion, "回到论文贡献、结果证据与应用价值。"],
                 section_map.get("conclusion", []) or section_map.get("results", []),
             ),
         }
@@ -239,7 +262,8 @@ class SlideWriterAgent:
             slide_type,
             (summary.one_sentence_summary, [summary.one_sentence_summary], section_map.get(key_section, [])),
         )
-        bullets = self._compact_bullets([safe_truncate(item, 120) for item in raw_bullets if item], chinese_mode)
+        bullets = self._compact_bullets([truncate_plain(item, 120) for item in raw_bullets if item], chinese_mode)
+        bullets = self._ensure_meaningful_bullets(bullets, supporting_sections or section_map.get(key_section, []), slide_type)
         unsupported_claims = [bullet for bullet in bullets if "positive results" in bullet.lower() and not section_map.get("results")]
         source_refs = make_source_refs(supporting_sections or section_map.get(key_section, []), max_refs=2)
 
@@ -258,23 +282,16 @@ class SlideWriterAgent:
                     )
                     break
 
-        confidence = 0.85 if source_refs else 0.35
-        if any("uncertain" in bullet.lower() for bullet in bullets):
-            confidence = min(confidence, 0.55)
-
-        if profile and profile.preferred_language == "zh":
-            title = f"{self._format_title(title, True)}（中文）"
-        elif profile and profile.preferred_language == "bilingual":
-            title = f"{self._format_title(title, False)} / {self._format_title(title, False)}"
-        else:
-            title = self._format_title(title, False)
+        confidence = 0.85 if source_refs else 0.45
+        title = self._format_title(title, chinese_mode)
+        key_message = self._normalize_key_message(key_message, bullets)
 
         return SlideDraft(
             slide_id="",
             slide_type=slide_type,
             title=title,
-            purpose=f"Support the audience with a {slide_type} slide grounded in the paper.",
-            key_message=safe_truncate(key_message, 90 if chinese_mode else 140),
+            purpose=f"围绕{title}输出可汇报的中文要点。",
+            key_message=key_message,
             bullets=bullets,
             visual_elements=visual_elements,
             speaker_notes=self._maybe_notes(profile, self._build_speaker_notes(title, key_message, bullets, source_refs)),
@@ -284,22 +301,135 @@ class SlideWriterAgent:
         )
 
     def _build_speaker_notes(self, title: str, key_message: str, bullets: list[str], source_refs) -> str:
-        source_line = ", ".join(ref.section_title or f"p.{ref.page_number}" for ref in source_refs) if source_refs else "no strong section grounding available"
-        bullet_line = " ".join(bullets[:3])
-        return safe_truncate(
-            f"Present '{title}' by leading with: {key_message}. Then walk through: {bullet_line}. Cite {source_line} while explaining what is directly supported versus uncertain.",
+        source_line = "、".join(ref.section_title or f"第{ref.page_number}页" for ref in source_refs) if source_refs else "原文支撑较弱"
+        bullet_line = "；".join(bullets[:3])
+        return truncate_plain(
+            f"先用一句话讲清“{title}”的核心结论：{key_message}。再依次展开：{bullet_line}。引用{source_line}，只讲原文能支撑的内容。",
             420,
         )
 
     def _compact_bullets(self, bullets: list[str], chinese_mode: bool) -> list[str]:
-        limited = bullets[:3]
+        limited = bullets[:4]
         max_len = 18 if chinese_mode else 80
-        return [safe_truncate(bullet.strip(), max_len) for bullet in limited if bullet.strip()]
+        compacted: list[str] = []
+        for bullet in limited:
+            candidate = normalize_presentation_text(bullet.strip())
+            candidate = re.sub(r"^(the paper|this paper|we|authors?)\s+", "", candidate, flags=re.IGNORECASE)
+            candidate = candidate.replace("Confidence", "")
+            candidate = self._clean_generated_bullet(candidate)
+            candidate = truncate_plain(candidate, max_len)
+            if candidate and candidate not in compacted:
+                compacted.append(candidate)
+        return compacted[:4]
 
     def _format_title(self, title: str, chinese_mode: bool) -> str:
-        return safe_truncate(title.strip(), 12 if chinese_mode else 60)
+        normalized = normalize_presentation_text(title).lower()
+        if normalized in self.TITLE_MAP:
+            return self.TITLE_MAP[normalized]
+        if "experimental" in normalized or "experiment" in normalized:
+            return "实验设计"
+        for key, mapped in self.TITLE_MAP.items():
+            if key in normalized:
+                return mapped
+        if chinese_mode or contains_cjk(title):
+            return compress_title(title, 14)
+        return truncate_plain(normalize_presentation_text(title), 60)
 
     def _maybe_notes(self, profile: UserProfile | None, notes: str) -> str:
         if profile and not profile.include_speaker_notes:
             return ""
         return notes
+
+    def _normalize_key_message(self, key_message: str, bullets: list[str]) -> str:
+        cleaned = normalize_presentation_text(key_message)
+        cleaned = re.sub(r"confidence[:：]?\s*\d*\.?\d+", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"uncertain|not enough information", "", cleaned, flags=re.IGNORECASE)
+        if cleaned and not contains_cjk(cleaned):
+            cleaned = self._localize_english_bullet(cleaned)
+        if not cleaned and bullets:
+            cleaned = bullets[0]
+        if len(cleaned) < 8 and bullets:
+            cleaned = "；".join(bullets[:2])
+        return truncate_plain(cleaned, 90)
+
+    def _ensure_meaningful_bullets(self, bullets: list[str], sections: list[Section], slide_type: str) -> list[str]:
+        filtered: list[str] = []
+        for bullet in bullets:
+            cleaned = normalize_presentation_text(bullet)
+            lowered = cleaned.lower()
+            if any(
+                marker in lowered
+                for marker in [
+                    "uncertain",
+                    "confidence",
+                    "method details are uncertain",
+                    "results remain uncertain",
+                    "not enough information",
+                ]
+            ):
+                continue
+            if any(marker in cleaned for marker in ["待补充", "……", "...", "Method details are uncertain"]):
+                continue
+            if cleaned in {"重点展示结果", "解释方法细节", "讨论设计权衡"}:
+                continue
+            if cleaned:
+                filtered.append(cleaned)
+
+        if len(filtered) < 2:
+            source_text = " ".join(section.text for section in sections[:2]) if sections else ""
+            for sentence in bulletize(source_text, max_bullets=4):
+                candidate = self._clean_generated_bullet(sentence)
+                if candidate and candidate not in filtered:
+                    filtered.append(candidate)
+                if len(filtered) >= 3:
+                    break
+
+        if slide_type not in {"title", "divider"} and len(filtered) < 2:
+            fallback_map = {
+                "background": ["说明背景价值", "指出研究动因"],
+                "problem": ["说明研究对象", "明确现有不足"],
+                "method": ["拆解方法流程", "说明关键模块"],
+                "technical": ["提炼技术结构", "说明设计理由"],
+                "experiments": ["说明实验设置", "交代评价方式"],
+                "results": ["提炼核心结果", "说明结果意义"],
+                "analysis": ["解释结果原因", "指出适用边界"],
+                "limitations": ["指出应用边界", "说明改进方向"],
+                "discussion": ["聚焦关键追问", "引导后续讨论"],
+                "conclusion": ["回收核心结论", "强调应用价值"],
+            }
+            for candidate in fallback_map.get(slide_type, ["补充关键证据", "强化页面结论"]):
+                if candidate not in filtered:
+                    filtered.append(candidate)
+                if len(filtered) >= 2:
+                    break
+        return filtered[:4]
+
+    def _title_slide_title(self, paper_title: str, summary: PaperSummary) -> str:
+        if contains_cjk(paper_title):
+            return compress_title(paper_title, 14)
+        if summary.keywords:
+            keyword = summary.keywords[0]
+            if keyword:
+                return compress_title(f"{keyword}研究", 14)
+        return "论文研究汇报"
+
+    def _localize_english_bullet(self, text: str) -> str:
+        keywords = re.findall(r"[A-Za-z0-9-]{3,}", text)
+        ignored = {"the", "this", "that", "these", "those", "with", "from", "into", "through"}
+        usable = [token for token in keywords if token.lower() not in ignored]
+        focus = usable[0].upper() if usable else "核心流程"
+        if "result" in text.lower():
+            return f"给出{focus}结果"
+        if "method" in text.lower() or "pipeline" in text.lower():
+            return f"说明{focus}流程"
+        if "experiment" in text.lower():
+            return f"验证{focus}效果"
+        if "conclusion" in text.lower():
+            return f"总结{focus}结论"
+        return f"围绕{focus}展开"
+
+    def _clean_generated_bullet(self, text: str) -> str:
+        candidate = normalize_presentation_text(text)
+        if not contains_cjk(candidate):
+            candidate = self._localize_english_bullet(candidate)
+        return truncate_plain(candidate, 18)

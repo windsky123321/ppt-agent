@@ -196,6 +196,19 @@ export function App() {
     state.setSkills(await fetchSkills());
   }
 
+  const activeProfileName = state.profiles.find((profile) => profile.id === state.activeProfileId)?.name ?? "";
+  const isMockMode = state.modelConfig.llm_provider === "mock" || state.modelConfig.vision_provider === "mock";
+  const llmNeedsKey = state.modelConfig.llm_provider !== "mock";
+  const apiKeyReady = !llmNeedsKey || Boolean(state.modelConfig.llm_api_key.trim() || hasSavedMaskedKey(state.modelConfigView?.llm_api_key_masked));
+  const canGenerate = state.backendConnected && Boolean(state.selectedFile) && apiKeyReady && !state.loading;
+  const generateHint = !state.backendConnected
+    ? "请先双击运行 PPT-Agent.exe，并确认浏览器已自动打开。"
+    : !apiKeyReady
+      ? "请先在模型配置中填写 API Key，或切换到 Mock 模式进行流程测试。"
+      : !state.selectedFile
+        ? "请先上传论文 PDF。"
+        : "检查模板与设置后点击“生成 PPT”。如果质量检查未通过，系统会提示继续精修。";
+
   async function handleGenerate() {
     if (!state.backendConnected) {
       state.setError("后端未连接，请先启动 PPT-Agent.exe。");
@@ -206,7 +219,7 @@ export function App() {
       return;
     }
     if (!apiKeyReady) {
-      state.setError("当前未配置可用模型。请前往“模型配置”填写 API Key，或切换到 Mock 模式。");
+      state.setError("请先在模型配置中填写 API Key，或切换到 Mock 模式进行流程测试。");
       return;
     }
 
@@ -216,7 +229,7 @@ export function App() {
       const result = await uploadPaper(state.selectedFile, state.settings, state.activeProfileId || undefined, state.deckMode);
       state.setResult(result);
       await Promise.all([refreshArtifacts(result.job.deck_id), refreshUsage()]);
-      state.setModelStatus(`生成完成：${result.job.deck_id}`);
+      state.setModelStatus(result.job.mock_mode ? `模拟生成完成：${result.job.deck_id}` : `生成完成：${result.job.deck_id}`);
     } catch (error) {
       state.setError(error instanceof Error ? error.message : "生成失败，请查看日志后重试。");
     } finally {
@@ -225,7 +238,9 @@ export function App() {
   }
 
   async function handleSaveProfile() {
-    if (!state.editingProfile) return;
+    if (!state.editingProfile) {
+      return;
+    }
     try {
       const { id, ...rest } = state.editingProfile;
       const saved = await saveProfile(rest as Omit<UserProfile, "id">, id.startsWith("profile_preset_") ? undefined : id);
@@ -239,7 +254,9 @@ export function App() {
   }
 
   async function handleRegenerateSlide() {
-    if (!state.result?.job.deck_id) return;
+    if (!state.result?.job.deck_id) {
+      return;
+    }
     state.setLoading(true);
     state.setError("");
     try {
@@ -397,18 +414,6 @@ export function App() {
     }
   }
 
-  const activeProfileName = state.profiles.find((profile) => profile.id === state.activeProfileId)?.name ?? "";
-  const llmNeedsKey = state.modelConfig.llm_provider !== "mock";
-  const apiKeyReady = !llmNeedsKey || Boolean(state.modelConfig.llm_api_key.trim() || hasSavedMaskedKey(state.modelConfigView?.llm_api_key_masked));
-  const canGenerate = state.backendConnected && Boolean(state.selectedFile) && apiKeyReady && !state.loading;
-  const generateHint = !state.backendConnected
-    ? "请先双击运行 PPT-Agent.exe，并确认浏览器已自动打开。"
-    : !apiKeyReady
-      ? "第一步：去“模型配置”填写 API Key；如果只是验收流程，可直接切换到 Mock 模式。"
-      : !state.selectedFile
-        ? "第二步：上传论文 PDF。"
-        : "第三步：检查模板与设置，然后点击“生成 PPT”。生成完成后可在右侧下载结果。";
-
   return (
     <main className="min-h-screen bg-[#f6f7fb] px-4 py-6 text-ink md:px-8">
       <div className="mx-auto max-w-7xl">
@@ -416,11 +421,9 @@ export function App() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-normal">PPT Agent v0.2.0-dev</h1>
-              <p className="mt-1 text-sm text-slate-600">上传 PDF，生成可编辑 PPT，并管理技能库与 Token 统计。</p>
+              <p className="mt-1 text-sm text-slate-600">上传 PDF，生成中文 PPT，并管理技能库与 Token 使用详情。</p>
             </div>
-            <div className="rounded-md bg-white px-3 py-2 text-sm text-slate-700 shadow-sm">
-              {state.backendConnected ? "服务已连接" : "服务未连接"}
-            </div>
+            <div className="rounded-md bg-white px-3 py-2 text-sm text-slate-700 shadow-sm">{state.backendConnected ? "服务已连接" : "服务未连接"}</div>
           </div>
           <nav className="mt-4 flex flex-wrap gap-2">
             <TabButton active={activeTab === "workspace"} onClick={() => setActiveTab("workspace")} label="工作台" />
@@ -452,6 +455,7 @@ export function App() {
                   disabled={!canGenerate}
                   generateHint={generateHint}
                   apiKeyReady={apiKeyReady}
+                  isMockMode={isMockMode}
                 />
                 <UploadPanel selectedFile={state.selectedFile} onFileChange={state.setSelectedFile} />
                 <ProfilePanel
@@ -476,7 +480,9 @@ export function App() {
                   onTemplateSelect={(templateId) => {
                     state.setSelectedTemplateId(templateId);
                     const template = state.promptTemplates.find((item) => item.id === templateId);
-                    if (template) state.setSettings({ ...state.settings, long_instruction: template.content });
+                    if (template) {
+                      state.setSettings({ ...state.settings, long_instruction: template.content });
+                    }
                   }}
                   onParse={handleParseInstruction}
                   onClear={() => {
@@ -506,9 +512,9 @@ export function App() {
               </div>
 
               <div className="space-y-5">
-                <ArtifactsPanel job={state.result?.job ?? null} artifacts={state.artifacts} />
+                <ArtifactsPanel job={state.result?.job ?? null} artifacts={state.artifacts} onContinueRefine={() => setActiveTab("workspace")} />
                 <WarningsPanel criticReport={state.criticReport} groundingReport={state.groundingReport} />
-                <OutlinePreview parsedPaper={state.result?.parsed_paper ?? null} />
+                <OutlinePreview parsedPaper={state.result?.parsed_paper ?? null} paperSummary={state.result?.paper_summary ?? null} targetLanguage={state.settings.language} />
               </div>
             </div>
           </>
@@ -552,8 +558,8 @@ export function App() {
             rows={[
               "默认输出目录：storage/decks",
               `当前配置：${state.modelConfig.output_dir}`,
-              "每次生成都会保存 PPTX 和中间 JSON。",
-              "如果你找不到结果，请先查看右侧“生成结果”中的 final_deck.pptx 路径。",
+              "质量通过时会生成 final_deck.pptx；未通过时只保留 draft_deck.pptx。",
+              "如需继续精修，请查看 quality_report.json 中的 Critic 结果。",
             ]}
           />
         ) : null}
@@ -564,8 +570,8 @@ export function App() {
             rows={[
               "启动日志：logs/launcher.log",
               "后端日志：logs/backend.log",
-              "技能和 Token 统计会保存在本地目录，不会记录 API Key。",
-              "如果启动或生成失败，请先查看 launcher.log 和 backend.log。",
+              "质量报告：storage/decks/<job_id>/quality_report.json",
+              "如果启动或生成失败，请优先查看 launcher.log、backend.log 和 quality_report.json。",
             ]}
           />
         ) : null}
@@ -575,9 +581,9 @@ export function App() {
             title="关于"
             rows={[
               "PPT Agent 当前开发版本：v0.2.0-dev",
-              "默认启用 High-Quality Low-Token Mode",
-              "默认模型：gpt-5.5；fallback：gpt-4.1-mini",
-              "技能库默认不执行脚本，Token 统计默认不记录敏感内容。",
+              "Mock 模式仅用于测试上传、生成、下载流程。",
+              "正式生成前请先配置 API Key，并确认质量检查已通过。",
+              "如果结果仍不满意，请使用继续精修或 Round 2 / Round 3 功能。",
             ]}
           />
         ) : null}
@@ -588,11 +594,11 @@ export function App() {
 
 function QuickStartPanel() {
   const steps = [
-    "第一步：去“模型配置”填写 API Key，或切换到 Mock 模式。",
+    "第一步：在模型配置中填写 API Key，或切换到 Mock 模式测试流程。",
     "第二步：上传论文 PDF。",
-    "第三步：选择模板、Deck 模式和输出设置。",
-    "第四步：点击“生成 PPT”等待完成。",
-    "第五步：在右侧下载 PPT 或查看产物路径。",
+    "第三步：选择汇报模式、主题和输出设置。",
+    "第四步：点击“生成 PPT”并等待完成。",
+    "第五步：质量通过后下载正式 PPT；未通过时先继续精修。",
   ];
   return (
     <section className="rounded-3xl bg-white/85 p-6 shadow-card backdrop-blur">

@@ -30,29 +30,39 @@ class RegenerateSlideAgent:
             token in instruction for token in ["第", "继续优化", "修改", "精修", "调整", "只改"]
         )
         for slide in drafts.slides:
-            if slide.slide_id in replacement_map:
-                new_slide = replacement_map[slide.slide_id]
-                if patch_mode:
-                    new_slide.bullets = new_slide.bullets[:3]
-                if ("title" in lowered or "标题" in instruction) and new_slide.title:
-                    new_slide.title = self.writer._format_title(new_slide.title, profile.preferred_language == "zh")
-                if "visual" in lowered and not new_slide.visual_elements and assets and assets.assets:
-                    asset = assets.assets[0]
-                    new_slide.visual_elements.append(
-                        {
-                            "type": asset.asset_type,
-                            "asset_id": asset.id,
-                            "description": asset.short_visual_description,
-                            "placement_hint": "right_panel",
-                        }
-                    )
-                slide.title = new_slide.title
-                slide.purpose = new_slide.purpose
-                slide.key_message = new_slide.key_message
-                slide.bullets = new_slide.bullets
-                slide.visual_elements = new_slide.visual_elements
-                slide.speaker_notes = new_slide.speaker_notes
-                slide.source_refs = new_slide.source_refs
-                slide.confidence = new_slide.confidence
-                slide.unsupported_claims = new_slide.unsupported_claims
+            if slide.slide_id not in replacement_map:
+                continue
+            new_slide = replacement_map[slide.slide_id]
+            if patch_mode:
+                if len(new_slide.bullets) > 2:
+                    new_slide.bullets = new_slide.bullets[:2]
+                elif len(new_slide.bullets) == 2 and "reduce text" in lowered:
+                    new_slide.bullets = new_slide.bullets[:1]
+                elif not new_slide.bullets:
+                    new_slide.bullets = slide.bullets[:2]
+            if ("title" in lowered or "标题" in instruction) and new_slide.title:
+                new_slide.title = self.writer._format_title(new_slide.title, profile.preferred_language == "zh")
+                if new_slide.title == slide.title:
+                    new_slide.title = self.writer._format_title(new_slide.title[:10], profile.preferred_language == "zh")
+            if patch_mode and new_slide.key_message == slide.key_message and new_slide.bullets:
+                new_slide.key_message = "；".join(new_slide.bullets[:2])
+            if "visual" in lowered and not new_slide.visual_elements and assets and assets.assets:
+                asset = assets.assets[0]
+                new_slide.visual_elements.append(
+                    {
+                        "type": asset.asset_type,
+                        "asset_id": asset.id,
+                        "description": asset.short_visual_description,
+                        "placement_hint": "right_panel",
+                    }
+                )
+            slide.title = new_slide.title
+            slide.purpose = new_slide.purpose
+            slide.key_message = new_slide.key_message
+            slide.bullets = new_slide.bullets
+            slide.visual_elements = new_slide.visual_elements
+            slide.speaker_notes = new_slide.speaker_notes
+            slide.source_refs = new_slide.source_refs
+            slide.confidence = new_slide.confidence
+            slide.unsupported_claims = new_slide.unsupported_claims
         return drafts

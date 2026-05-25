@@ -81,7 +81,8 @@ def test_profile_affects_deck_plan_and_slide_language():
     plan = DeckPlannerAgent(llm).run(paper, summary, settings, profile, load_assets())
     drafts = SlideWriterAgent(llm).run(paper, summary, plan, profile, load_assets())
     assert plan.slide_count >= 10
-    assert any("（中文）" in slide.title for slide in drafts.slides if slide.slide_type != "title")
+    assert all("（中文）" not in slide.title for slide in drafts.slides)
+    assert any(any("\u4e00" <= ch <= "\u9fff" for ch in slide.title) for slide in drafts.slides if slide.slide_type != "title")
 
 
 def test_critic_and_repair_loop_behavior():
@@ -119,6 +120,8 @@ def test_selected_slide_regeneration_and_artifact_endpoint(tmp_path: Path, monke
     assert regen.status_code == 200, regen.text
     artifacts = client.get(f"/api/decks/{deck_id}/artifacts")
     assert artifacts.status_code == 200
-    artifact_names = {item["name"] for item in artifacts.json()["artifacts"] if item["exists"]}
+    artifact_payload = artifacts.json()
+    artifact_names = {item["name"] for item in artifact_payload["artifacts"] if item["exists"]}
     assert "critic_report.json" in artifact_names
-    assert "final_deck.pptx" in artifact_names
+    assert artifact_payload["download_artifact_name"] == "draft_deck.pptx"
+    assert "draft_deck.pptx" in artifact_names

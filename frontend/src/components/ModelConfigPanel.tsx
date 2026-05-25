@@ -30,15 +30,6 @@ const PRESETS: Record<string, Partial<RuntimeModelConfig>> = {
     vision_model: "gpt-4.1-mini",
     ...LOW_TOKEN_DEFAULTS,
   },
-  compatible: {
-    llm_provider: "openai_compatible",
-    llm_base_url: "https://your-provider.example/v1",
-    llm_model: "gpt-5.5",
-    vision_provider: "openai_compatible",
-    vision_base_url: "https://your-provider.example/v1",
-    vision_model: "your-vision-model",
-    ...LOW_TOKEN_DEFAULTS,
-  },
 };
 
 type Props = {
@@ -54,32 +45,49 @@ type Props = {
 export function ModelConfigPanel({ config, savedView, status, onChange, onSave, onTest, onUseMock }: Props) {
   const patch = <K extends keyof RuntimeModelConfig>(key: K, value: RuntimeModelConfig[K]) => onChange({ ...config, [key]: value });
   const applyPreset = (preset: string) => onChange({ ...config, ...PRESETS[preset] });
+  const isMockMode = config.llm_provider === "mock" || config.vision_provider === "mock";
+  const missingKey = config.llm_provider !== "mock" && !config.llm_api_key && !savedView?.llm_api_key_masked;
 
   return (
     <section className="rounded-lg bg-white p-5 shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-ink">模型配置</h2>
-          <p className="mt-1 text-sm text-slate-600">在这里配置 API Key、模型、视觉模型和 Low Token Mode 参数。</p>
+          <p className="mt-1 text-sm text-slate-600">在这里配置 API Key、模型和测试模式。Mock 只用于流程测试，不代表正式生成质量。</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-ink" onClick={onUseMock}>切换到 Mock 模式</button>
-          <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-ink ring-1 ring-slate-200" onClick={onTest}>测试连接</button>
-          <button className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white" onClick={onSave}>保存配置</button>
+          <button className="rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-ink" onClick={onUseMock}>
+            切换到 Mock 测试
+          </button>
+          <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-ink ring-1 ring-slate-200" onClick={onTest}>
+            测试连接
+          </button>
+          <button className="rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white" onClick={onSave}>
+            保存配置
+          </button>
         </div>
       </div>
 
-      <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
-        首次启动建议先使用 Mock 模式完成验收。真实 API Key 只会保存在本机配置中，不会写入 EXE、日志或发布包。
+      <div className={`mt-4 rounded-md px-3 py-2 text-sm ${isMockMode ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-800"}`}>
+        当前模式：{isMockMode ? "Mock 模式：流程测试" : "真实模式：正式生成"}
       </div>
+      {isMockMode ? (
+        <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Mock 模式不会调用真实模型，只用于测试上传、生成、下载流程。
+        </div>
+      ) : null}
+      {missingKey ? (
+        <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          请填写 API Key 后再进行正式生成。
+        </div>
+      ) : null}
 
       <label className="mt-4 block text-sm text-slate-700">
         常用预设
         <select className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2" defaultValue="" onChange={(event) => event.target.value && applyPreset(event.target.value)}>
           <option value="">请选择预设</option>
-          <option value="mock">Mock</option>
-          <option value="openai">OpenAI</option>
-          <option value="compatible">OpenAI-Compatible</option>
+          <option value="mock">Mock 测试</option>
+          <option value="openai">正式生成（OpenAI）</option>
         </select>
       </label>
 
@@ -102,8 +110,8 @@ export function ModelConfigPanel({ config, savedView, status, onChange, onSave, 
         <Checkbox label="启用 Repair" checked={config.enable_repair} onChange={(value) => patch("enable_repair", value)} />
         <Checkbox label="启用 Patch Mode" checked={config.patch_mode} onChange={(value) => patch("patch_mode", value)} />
         <NumberField label="最大修复轮数" value={config.max_repair_loops} min={0} max={5} onChange={(value) => patch("max_repair_loops", value)} />
-        <NumberField label="正常生成 Tokens" value={config.normal_max_output_tokens} min={1000} max={12000} onChange={(value) => patch("normal_max_output_tokens", value)} />
-        <NumberField label="修订 Tokens" value={config.revision_max_output_tokens} min={300} max={4000} onChange={(value) => patch("revision_max_output_tokens", value)} />
+        <NumberField label="正式生成 Tokens" value={config.normal_max_output_tokens} min={1000} max={12000} onChange={(value) => patch("normal_max_output_tokens", value)} />
+        <NumberField label="精修 Tokens" value={config.revision_max_output_tokens} min={300} max={4000} onChange={(value) => patch("revision_max_output_tokens", value)} />
         <NumberField label="Temperature" value={config.temperature} min={0} max={1} step={0.1} onChange={(value) => patch("temperature", value)} />
       </div>
 

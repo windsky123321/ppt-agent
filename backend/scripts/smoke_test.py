@@ -21,9 +21,10 @@ def main() -> None:
         original_filename=fixture.name,
         settings=GenerationSettings(),
     )
-    pptx_path = FileStorage().get_artifact_path(result.job_id, "final_deck.pptx")
+    artifact_name = result.download_artifact_name or "final_deck.pptx"
+    pptx_path = FileStorage().get_artifact_path(result.job_id, artifact_name)
     if not pptx_path.exists():
-        raise RuntimeError("Smoke test failed: final_deck.pptx was not created.")
+        raise RuntimeError(f"Smoke test failed: {artifact_name} was not created.")
     print(f"SMOKE_OK {pptx_path}")
 
 
